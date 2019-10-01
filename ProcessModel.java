@@ -23,8 +23,8 @@ public class ProcessModel extends Thread {
 		while (!Thread.currentThread().isInterrupted()) {
 			try {
 				Thread.sleep(100);
-			} catch (Exception e){
-				//exception
+			} catch (Exception e) {
+				// exception
 			}
 		}
 	}
