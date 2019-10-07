@@ -1,3 +1,4 @@
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -5,42 +6,57 @@
  */
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
+
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.Socket;
 
-public class Process extends Thread{
-    private InetAddress ip;
-    private Integer port;
-    private Integer processId;
-    
-    
-    public InetAddress getIp() {
-        return ip;
-    }
-    public Integer getPort() {
-        return port;
-    }
+public class Process extends Thread {
+	private InetAddress ip;
+	private Integer port;
+	private Integer processId;
+	private Socket socket;
+	static int messageID = 0;
 
-    public Integer getProcessId() {
-        return processId;
-    }
+	public InetAddress getIp() {
+		return ip;
+	}
 
-    public void setProcessId(Integer processId) {
-        this.processId = processId;
-    }
-    public void setIp(InetAddress ip) {
-        this.ip = ip;
-    }
+	public Socket getSocket() {
+		return socket;
+	}
 
-    public void setPort(Integer port) {
-        this.port = port;
-    }
-    
-    public Process(InetAddress ip, Integer processId, Integer port) {
-                this.port=port;
-                this.processId=processId;
-                this.ip=ip;
+	public Integer getPort() {
+		return port;
+	}
+
+	public Integer getProcessId() {
+		return processId;
+	}
+
+	public void setProcessId(Integer processId) {
+		this.processId = processId;
+	}
+
+	public void setIp(InetAddress ip) {
+		this.ip = ip;
+	}
+
+	public void setPort(Integer port) {
+		this.port = port;
+	}
+
+	public Process(InetAddress ip, Integer processId, Integer port) {
+		this.port = port;
+		this.processId = processId;
+		this.ip = ip;
+		try {
+			this.socket = new Socket(ip, port);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		SigHandlerUsr2 sigHandlerUsr2 = new SigHandlerUsr2(this);
 		SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
 		SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
@@ -60,14 +76,16 @@ public class Process extends Thread{
 		while (!Thread.currentThread().isInterrupted()) {
 			try {
 				Thread.sleep(100);
-			} catch (Exception e){
-				//exception
+			} catch (Exception e) {
+				// exception
 			}
 		}
 	}
-        public void sendMessage(String m, Process pj){
-            
-        }
+
+	public void sendMessage(String m, Process pj) {
+
+	}
+
 	@SuppressWarnings("deprecation")
 	public static class SigHandlerUsr2 implements SignalHandler {
 		Process p;
@@ -79,7 +97,7 @@ public class Process extends Thread{
 
 		@Override
 		public void handle(Signal signal) {
-                        
+
 			System.out.format("Handling signal: %s\n", signal.toString());
 		}
 	}

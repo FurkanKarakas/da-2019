@@ -34,10 +34,9 @@ public class Da_proc {
                         System.out.println("Start process: " + n);
                     }
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println(e);
             }
-
 
         }
     }
