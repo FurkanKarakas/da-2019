@@ -11,6 +11,8 @@
 */
 import java.net.Socket;
 import java.io.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PerfectLinks {
     private Process pi;
@@ -50,10 +52,31 @@ public class PerfectLinks {
             if (pi.isAlive() && pj.isAlive()) {
                 try {
                     ostream.writeByte(Process.messageID++);
+                    ostream.writeUTF(m);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
+    }
+    public void receiveMessge(){
+        DataInputStream istream=null;
+        try {
+            pj.getSocket().connect(pi.getSocket().getLocalSocketAddress());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            istream = new DataInputStream(pj.getSocket().getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String m = null;
+        try {
+            m=istream.readUTF();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(m);
     }
 }
