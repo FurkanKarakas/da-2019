@@ -41,14 +41,19 @@ public class PerfectLinks {
 
     public void sendMessage(String m) {
     	byte[] buf = m.getBytes();
-    	InetAddress pjAddress = pj.getSocket().getInetAddress();
-    	Integer pjPort = pj.getSocket().getPort();
+    	DatagramSocket pjSocket = pj.createSocket();
+    	DatagramSocket piSocket = pj.createSocket();
+    	InetAddress pjAddress = pjSocket.getInetAddress();
+    	Integer pjPort = pjSocket.getPort();
     	DatagramPacket mPacket = new DatagramPacket(buf, buf.length, pjAddress, pjPort);
     	try {
-			pi.getSocket().send(mPacket);
+			piSocket.send(mPacket);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+    	
+    	pj.closeSocket();
+    	pi.closeSocket();
     	/*
         DataOutputStream ostream = null;
         try {
@@ -78,14 +83,16 @@ public class PerfectLinks {
     public void receiveMessge(){
     	byte[] buf = new byte[256];
     	DatagramPacket packet = new DatagramPacket(buf, buf.length);
-    	
+    	DatagramSocket pjSocket = pj.getSocket();
     	try {
-			pj.getSocket().receive(packet);
+			pjSocket.receive(packet);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    	
     	System.out.print(packet.getData());
+    	pjSocket.close();
     	/*
         DataInputStream istream=null;
         try {

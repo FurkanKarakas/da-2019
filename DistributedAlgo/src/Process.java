@@ -12,6 +12,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class Process extends Thread {
 	private InetAddress ip;
@@ -47,16 +48,32 @@ public class Process extends Thread {
 	public void setPort(Integer port) {
 		this.port = port;
 	}
+	
+	public DatagramSocket createSocket() {
+		System.out.println(this.ip);
+		System.out.println(this.port);
+		try {
+			if (this.socket == null) {
+				this.socket = new DatagramSocket(this.port, this.ip);
+			}
+			else if (this.socket.isBound() == false)
+				this.socket = new DatagramSocket(this.port, this.ip);
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return this.socket;
+	}
+	
+	public void closeSocket() {
+		this.socket.close();
+	}
 
 	public Process(InetAddress ip, Integer processId, Integer port) {
 		this.port = port;
 		this.processId = processId;
 		this.ip = ip;
-		try {
-			this.socket = new DatagramSocket(port, ip);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+
 		SigHandlerUsr2 sigHandlerUsr2 = new SigHandlerUsr2(this);
 		SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
 		SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);

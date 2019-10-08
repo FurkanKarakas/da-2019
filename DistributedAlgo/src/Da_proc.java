@@ -32,10 +32,10 @@ public class Da_proc {
                 while (sc.hasNextLine()) {
                     String[] params = sc.nextLine().trim().split(" ");
                     if (Integer.parseInt(params[0]) == n) {
-                    	InetAddress piAddr = InetAddress.getByName("127.0.0.2");
-                    	InetAddress pjAddr = InetAddress.getByName("127.0.0.3");
+                    	InetAddress piAddr = InetAddress.getByName("127.0.0.8");
+                    	InetAddress pjAddr = InetAddress.getByName("127.0.0.9");
                         Process pi = new Process(piAddr, n, 8001); //Integer.parseInt(params[2]));
-                        Process pj = new Process(pjAddr, 24, 8001);
+                        Process pj = new Process(pjAddr, 24, 8080);
                         
                         PerfectLinks pl = new PerfectLinks(pi, pj);
                         pl.sendMessage("Hey pj");
