@@ -10,6 +10,7 @@
  */
 
 import java.io.*;
+import java.net.*;
 import java.util.Scanner;
 
 public class Da_proc {
@@ -29,9 +30,18 @@ public class Da_proc {
                 int totalN = Integer.parseInt(sc.nextLine());
 
                 while (sc.hasNextLine()) {
-                    String[] p = sc.nextLine().trim().split(" ");
-                    if (Integer.parseInt(p[0]) == n) {
-                        System.out.println("Start process: " + n);
+                    String[] params = sc.nextLine().trim().split(" ");
+                    if (Integer.parseInt(params[0]) == n) {
+                    	InetAddress piAddr = InetAddress.getByName("127.0.0.2");
+                    	InetAddress pjAddr = InetAddress.getByName("127.0.0.3");
+                        Process pi = new Process(piAddr, n, 8001); //Integer.parseInt(params[2]));
+                        Process pj = new Process(pjAddr, 24, 8001);
+                        
+                        PerfectLinks pl = new PerfectLinks(pi, pj);
+                        pl.sendMessage("Hey pj");
+                        pl.receiveMessge();
+                        
+                        
                     }
                 }
             } catch (Exception e) {

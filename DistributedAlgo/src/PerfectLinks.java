@@ -9,7 +9,7 @@
 2) (No duplication) No message is delivered (to a process) more than once.
 3) (No creation) No message is delivered unless it was sent.
 */
-import java.net.Socket;
+import java.net.*;
 import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,6 +17,11 @@ import java.util.logging.Logger;
 public class PerfectLinks {
     private Process pi;
     private Process pj;
+    
+    public PerfectLinks(Process p1, Process p2) {
+    	this.pi = p1;
+    	this.pj = p2;
+    }
 
     public Process getPi() {
         return pi;
@@ -34,7 +39,17 @@ public class PerfectLinks {
         this.pj = pj;
     }
 
-    public void sendMessage(String m, Integer n) {
+    public void sendMessage(String m) {
+    	byte[] buf = m.getBytes();
+    	InetAddress pjAddress = pj.getSocket().getInetAddress();
+    	Integer pjPort = pj.getSocket().getPort();
+    	DatagramPacket mPacket = new DatagramPacket(buf, buf.length, pjAddress, pjPort);
+    	try {
+			pi.getSocket().send(mPacket);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    	/*
         DataOutputStream ostream = null;
         try {
             pi.getSocket().connect(pj.getSocket().getLocalSocketAddress());
@@ -58,8 +73,20 @@ public class PerfectLinks {
                 }
             }
         }
+        */
     }
     public void receiveMessge(){
+    	byte[] buf = new byte[256];
+    	DatagramPacket packet = new DatagramPacket(buf, buf.length);
+    	
+    	try {
+			pj.getSocket().receive(packet);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	System.out.print(packet.getData());
+    	/*
         DataInputStream istream=null;
         try {
             pj.getSocket().connect(pi.getSocket().getLocalSocketAddress());
@@ -78,5 +105,6 @@ public class PerfectLinks {
             e.printStackTrace();
         }
         System.out.println(m);
+        */
     }
 }

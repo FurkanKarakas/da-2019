@@ -17,14 +17,14 @@ public class Process extends Thread {
 	private InetAddress ip;
 	private Integer port;
 	private Integer processId;
-	private Socket socket;
+	private DatagramSocket socket;
 	static int messageID = 0;
 
 	public InetAddress getIp() {
 		return ip;
 	}
 
-	public Socket getSocket() {
+	public DatagramSocket getSocket() {
 		return socket;
 	}
 
@@ -53,7 +53,7 @@ public class Process extends Thread {
 		this.processId = processId;
 		this.ip = ip;
 		try {
-			this.socket = new Socket(ip, port);
+			this.socket = new DatagramSocket(port, ip);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -63,11 +63,11 @@ public class Process extends Thread {
 
 		Signal signalTerm = new Signal("TERM");
 		Signal signalInt = new Signal("INT");
-		Signal signalUsr2 = new Signal("USR2");
+		//Signal signalUsr2 = new Signal("USR2");
 
-		Signal.handle(signalInt, sigHandlerInt);
-		Signal.handle(signalTerm, sigHandlerTerm);
-		Signal.handle(signalUsr2, sigHandlerUsr2);
+		//Signal.handle(signalInt, sigHandlerInt);
+		//Signal.handle(signalTerm, sigHandlerTerm);
+		//Signal.handle(signalUsr2, sigHandlerUsr2);
 
 		this.start();
 	}
