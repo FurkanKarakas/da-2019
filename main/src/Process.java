@@ -21,51 +21,13 @@ public class Process extends Thread {
 	private DatagramSocket socket;
 	static int messageID = 0;
 
-	public InetAddress getIp() {
-		return ip;
-	}
-
-	public DatagramSocket getSocket() {
-		return socket;
-	}
-
-	public Integer getPort() {
-		return port;
-	}
-
-	public Integer getProcessId() {
-		return processId;
-	}
-
-	public void setProcessId(Integer processId) {
-		this.processId = processId;
-	}
-
-	public void setIp(InetAddress ip) {
-		this.ip = ip;
-	}
-
-	public void setPort(Integer port) {
-		this.port = port;
-	}
 	
-	public DatagramSocket createSocket() {
-		System.out.println(this.ip);
-		System.out.println(this.port);
-		try {
-			if (this.socket == null) {
-				this.socket = new DatagramSocket(this.port, this.ip);
-			}
-			else if (this.socket.isBound() == false)
-				this.socket = new DatagramSocket(this.port, this.ip);
-		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public DatagramSocket create() throws SocketException {
+		this.socket = new DatagramSocket(this.port, this.ip);
 		return this.socket;
 	}
-	
-	public void closeSocket() {
+
+	public void close() {
 		this.socket.close();
 	}
 
@@ -97,10 +59,6 @@ public class Process extends Thread {
 				// exception
 			}
 		}
-	}
-
-	public void sendMessage(String m, Process pj) {
-
 	}
 
 	@SuppressWarnings("deprecation")
@@ -149,5 +107,33 @@ public class Process extends Thread {
 			System.out.format("Handling signal: %s\n", signal.toString());
 			p.interrupt();
 		}
+	}
+	
+	public InetAddress getIp() {
+		return ip;
+	}
+
+	public void setIp(InetAddress ip) {
+		this.ip = ip;
+	}
+
+	public DatagramSocket getSocket() {
+		return socket;
+	}
+
+	public Integer getPort() {
+		return port;
+	}
+
+	public void setPort(Integer port) {
+		this.port = port;
+	}
+
+	public Integer getProcessId() {
+		return processId;
+	}
+
+	public void setProcessId(Integer processId) {
+		this.processId = processId;
 	}
 }
