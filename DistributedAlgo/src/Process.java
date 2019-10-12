@@ -7,11 +7,8 @@
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.net.SocketException;
 
 public class Process extends Thread {
@@ -36,17 +33,17 @@ public class Process extends Thread {
 		this.processId = processId;
 		this.ip = ip;
 
-		SigHandlerUsr2 sigHandlerUsr2 = new SigHandlerUsr2(this);
-		SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
 		SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
+		SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
+		// SigHandlerUsr2 sigHandlerUsr2 = new SigHandlerUsr2(this);
 
-		Signal signalTerm = new Signal("TERM");
 		Signal signalInt = new Signal("INT");
-		//Signal signalUsr2 = new Signal("USR2");
+		Signal signalTerm = new Signal("TERM");
+		// Signal signalUsr2 = new Signal("USR2");
 
-		//Signal.handle(signalInt, sigHandlerInt);
-		//Signal.handle(signalTerm, sigHandlerTerm);
-		//Signal.handle(signalUsr2, sigHandlerUsr2);
+		Signal.handle(signalInt, sigHandlerInt);
+		Signal.handle(signalTerm, sigHandlerTerm);
+		// Signal.handle(signalUsr2, sigHandlerUsr2);
 
 		this.start();
 	}
@@ -61,7 +58,6 @@ public class Process extends Thread {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public static class SigHandlerUsr2 implements SignalHandler {
 		Process p;
 
@@ -77,7 +73,6 @@ public class Process extends Thread {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public static class SigHandlerTerm implements SignalHandler {
 		Process p;
 
@@ -93,7 +88,6 @@ public class Process extends Thread {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public static class SigHandlerInt implements SignalHandler {
 		Process p;
 

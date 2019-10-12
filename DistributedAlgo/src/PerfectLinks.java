@@ -11,8 +11,6 @@
 */
 import java.net.*;
 import java.io.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class PerfectLinks {
     private Process pi;
@@ -60,7 +58,6 @@ public class PerfectLinks {
 
     public void receiveMessge() throws IOException {
     	// NOT USED CURRENTLY
-    	
 
     	byte[] buf = new byte[256];
     	DatagramPacket packet = new DatagramPacket(buf, buf.length);

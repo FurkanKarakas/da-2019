@@ -13,7 +13,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class Da_proc {
+public class da_proc {
 
     /**
      * @param args the command line arguments
@@ -27,7 +27,9 @@ public class Da_proc {
             Scanner sc;
             try {
                 sc = new Scanner(membership);
-                int totalN = Integer.parseInt(sc.nextLine());
+                
+                // Parse first line from membership file that has total numbers of processes
+                Integer.parseInt(sc.nextLine());
 
                 while (sc.hasNextLine()) {
                     String[] params = sc.nextLine().trim().split(" ");
@@ -35,7 +37,7 @@ public class Da_proc {
                     	InetAddress piAddr = InetAddress.getByName("127.0.0.1");
                     	InetAddress pjAddr = InetAddress.getByName("127.0.0.1");
 
-                    	Process pi = new Process(piAddr, 1, 12001); //Integer.parseInt(params[2]));
+                    	Process pi = new Process(piAddr, Integer.parseInt(params[2]), 12001);
                         Process pj = new Process(pjAddr, 2, 12002);
 
                         PerfectLinks pl = new PerfectLinks(pi, pj);
