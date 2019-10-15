@@ -15,6 +15,7 @@ import java.io.*;
 public class PerfectLinks {
     private Process pi;
     private Process pj;
+    private boolean delivred;
     
     public PerfectLinks(Process pi, Process pj) {
     	this.pi = pi;
@@ -22,6 +23,7 @@ public class PerfectLinks {
     }
 
     public void sendMessage(String m) throws IOException {
+        this.delivred=false;
     	// Handle sending by pi
     	byte[] bufi = m.getBytes();
 
@@ -51,12 +53,15 @@ public class PerfectLinks {
     	pjSocket.receive(pjPacket);
 
     	String received = new String(pjPacket.getData(), 0, pjPacket.getLength());
+        if(received==m){
+            this.delivred=true;
+        }
     	System.out.println(received);
     	pi.close();
     	pj.close();
     }
-
-    public void receiveMessge() throws IOException {
+    
+    public void receiveMessage() throws IOException {
     	// NOT USED CURRENTLY
 
     	byte[] buf = new byte[256];
@@ -85,5 +90,13 @@ public class PerfectLinks {
         this.pj = pj;
     }
 
+    public boolean isDelivred() {
+        return delivred;
+    }
+
+    public void setDelivred(boolean delivred) {
+        this.delivred = delivred;
+    }
+    
 
 }
