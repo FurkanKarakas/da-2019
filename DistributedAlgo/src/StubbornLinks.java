@@ -8,14 +8,14 @@ import java.util.logging.Logger;
 public class StubbornLinks {
     private Process pi;
     private Process pj;
-    private PerfectLinks perfectLinks;
+    private FairLossLinks fairLossLinks;
     private boolean delivred;
     
     
     public StubbornLinks(Process pi, Process pj) {
         this.pi = pi;
         this.pj = pj;
-        this.perfectLinks = new PerfectLinks(pi,pj);
+        this.fairLossLinks = new FairLossLinks(pi,pj);
     }
     public Process getPi() {
         return pi;
@@ -36,8 +36,8 @@ public class StubbornLinks {
         this.delivred=false;
         while(true){
             try {
-                perfectLinks.sendMessage(m);
-                delivred=perfectLinks.isDelivred();
+                this.fairLossLinks.sendMessage(m);
+                delivred=this.fairLossLinks.isDelivred();
             } catch (IOException ex) {
                 Logger.getLogger(StubbornLinks.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -51,6 +51,10 @@ public class StubbornLinks {
         }
     }
     public void receiveMessage(){
-        
+        try {
+            this.fairLossLinks.receiveMessage();
+        } catch (IOException ex) {
+            Logger.getLogger(StubbornLinks.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }

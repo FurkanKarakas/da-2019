@@ -12,12 +12,12 @@
 import java.net.*;
 import java.io.*;
 
-public class PerfectLinks {
+public class FairLossLinks {
     private Process pi;
     private Process pj;
     private boolean delivred;
     
-    public PerfectLinks(Process pi, Process pj) {
+    public FairLossLinks(Process pi, Process pj) {
     	this.pi = pi;
     	this.pj = pj;
     }
