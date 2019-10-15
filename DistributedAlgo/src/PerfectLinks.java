@@ -11,19 +11,20 @@
 */
 import java.net.*;
 import java.io.*;
+import java.util.ArrayList;
 
-public class FairLossLinks {
+public class PerfectLinks {
     private Process pi;
     private Process pj;
-    private boolean delivred;
-    
-    public FairLossLinks(Process pi, Process pj) {
+    private ArrayList<String> delivered;
+
+	public PerfectLinks(Process pi, Process pj) {
     	this.pi = pi;
     	this.pj = pj;
+    	this.delivered = new ArrayList<String>();
     }
 
     public void sendMessage(String m) throws IOException {
-        this.delivred=false;
     	// Handle sending by pi
     	byte[] bufi = m.getBytes();
 
@@ -53,26 +54,18 @@ public class FairLossLinks {
     	pjSocket.receive(pjPacket);
 
     	String received = new String(pjPacket.getData(), 0, pjPacket.getLength());
-        if(received==m){
-            this.delivred=true;
-        }
+        this.delivered.add(received);
+
     	System.out.println(received);
     	pi.close();
     	pj.close();
     }
     
-    public void receiveMessage() throws IOException {
-    	// NOT USED CURRENTLY
-
-    	byte[] buf = new byte[256];
-    	DatagramPacket packet = new DatagramPacket(buf, buf.length);
-    	DatagramSocket pjSocket = pj.getSocket();
-		
-    	pjSocket.receive(packet);
-    	
-    	System.out.print(packet.getData());
-    	pjSocket.close();
+    public boolean isDelivered(String m) {
+    	// TODO
+    	return true;
     }
+   
 
     public Process getPi() {
         return pi;
@@ -88,14 +81,6 @@ public class FairLossLinks {
 
     public void setPj(Process pj) {
         this.pj = pj;
-    }
-
-    public boolean isDelivred() {
-        return delivred;
-    }
-
-    public void setDelivred(boolean delivred) {
-        this.delivred = delivred;
     }
     
 

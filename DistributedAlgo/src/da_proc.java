@@ -38,7 +38,7 @@ public class da_proc {
                 	Process pi = new Process(piAddr, Integer.parseInt(params[2]), 12001);
                     Process pj = new Process(pjAddr, 2, 12002);
 
-                    FairLossLinks pl = new FairLossLinks(pi, pj);
+                    PerfectLinks pl = new PerfectLinks(pi, pj);
                     pl.sendMessage("Hey pj");
                     
                     
