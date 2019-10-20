@@ -12,13 +12,17 @@
 import java.io.*;
 import java.net.*;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 public class da_proc {
 
     /**
      * @param args the command line arguments
+     * @throws ClassNotFoundException 
+     * @throws InterruptedException 
      */
-    public static void main(String[] args) throws FileNotFoundException, UnknownHostException, IOException {
+    @SuppressWarnings("deprecation")
+	public static void main(String[] args) throws FileNotFoundException, UnknownHostException, IOException, ClassNotFoundException, InterruptedException {
         if (args.length > 0) {
             int n = Integer.parseInt(args[0]);
             String fileName = args[1];
@@ -39,8 +43,9 @@ public class da_proc {
                     Process pj = new Process(pjAddr, 2, 12002);
 
                     PerfectLinks pl = new PerfectLinks(pi, pj);
-                    pl.sendMessage("Hey pj");
-                    
+                    Message msg = new Message("Hey pj");
+                    pl.sendMessage(msg.getId());
+                    pl.deliverMessage(msg.getId());
                     
                 }
             }

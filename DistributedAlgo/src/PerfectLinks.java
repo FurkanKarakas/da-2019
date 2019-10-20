@@ -16,52 +16,64 @@ import java.util.ArrayList;
 public class PerfectLinks {
 	private Process pi;
 	private Process pj;
-	private ArrayList<String> delivered;
+	private ArrayList<Integer> delivered;
 
 	public PerfectLinks(Process pi, Process pj) {
 		this.pi = pi;
 		this.pj = pj;
-		this.delivered = new ArrayList<String>();
+		this.delivered = new ArrayList<Integer>();
 	}
 
-	public void sendMessage(String m) throws IOException {
+	public void sendMessage(Integer msgId) throws IOException {
 		// Handle sending by pi
-		byte[] bufi = m.getBytes();
+		
+
+        final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+        final DataOutputStream dataOut = new DataOutputStream(byteOut);
+        dataOut.writeInt(msgId);
+        dataOut.close();
 
 		DatagramSocket piSocket = pi.create();
 		InetAddress ip = pj.getIp();
 		Integer port = pj.getPort();
+		final byte[] bytes = byteOut.toByteArray();
 
-		DatagramPacket piPacket = new DatagramPacket(bufi, bufi.length, ip, port);
+		DatagramPacket piPacket = new DatagramPacket(bytes, bytes.length, ip, port);
 		piSocket.connect(ip, port);
 
-		System.out.println("IsBound : " + piSocket.isBound());
-		System.out.println("isConnected : " + piSocket.isConnected());
-		System.out.println("InetAddress : " + piSocket.getInetAddress());
-		System.out.println("Port : " + piSocket.getPort());
-		System.out.println("Remote socket address : " + piSocket.getRemoteSocketAddress());
-		System.out.println("Local socket address : " + piSocket.getLocalSocketAddress());
+		//System.out.println("IsBound : " + piSocket.isBound());
+		//System.out.println("isConnected : " + piSocket.isConnected());
+		//System.out.println("InetAddress : " + piSocket.getInetAddress());
+		//System.out.println("Port : " + piSocket.getPort());
+		//System.out.println("Remote socket address : " + piSocket.getRemoteSocketAddress());
+		//System.out.println("Local socket address : " + piSocket.getLocalSocketAddress());
 
 		// Handle receiving by pj
-		byte[] bufj = m.getBytes();
-
 		DatagramSocket pjSocket = pj.create();
-		DatagramPacket pjPacket = new DatagramPacket(bufj, bufj.length);
+		DatagramPacket pjPacket = new DatagramPacket(bytes, bytes.length);
 
 		piSocket.send(piPacket);
 		pjSocket.receive(pjPacket);
 
-		String received = new String(pjPacket.getData(), 0, pjPacket.getLength());
-		this.delivered.add(received);
-
-		System.out.println(received);
+        final ByteArrayInputStream byteIn = new ByteArrayInputStream(pjPacket.getData());
+        final DataInputStream dataIn = new DataInputStream(byteIn);
+        final int received = dataIn.readInt();
+        
 		pi.close();
 		pj.close();
+		System.out.println("Received msg with ID: " + received);
+		
+	}
+	
+	public void deliverMessage(Integer msgId) {
+		if (this.isDelivered(msgId))
+			System.out.println("Delivered msg with ID: " + msgId);
+		else 
+			this.delivered.add(msgId);
 	}
 
-	public boolean isDelivered(String m) {
-		// TODO
-		return true;
+	public boolean isDelivered(Integer mId) {
+		return this.delivered.contains(mId);
 	}
 
 	public Process getPi() {
