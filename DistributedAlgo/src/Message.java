@@ -5,10 +5,10 @@ public class Message {
 
 	public Message(String m) {
 		this.m = m;
-		this.counter += 1;
-		this.id = this.counter;
+		Message.counter += 1;
+		this.id = Message.counter;
 	}
-	
+
 	public String getM() {
 		return m;
 	}
