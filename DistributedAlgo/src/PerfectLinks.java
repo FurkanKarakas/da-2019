@@ -25,36 +25,37 @@ public class PerfectLinks {
 	public void sendMessage(Integer msgId, Integer port, InetAddress ip) throws IOException {
 		// Handle sending by pi
 
-        final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-        final DataOutputStream dataOut = new DataOutputStream(byteOut);
-        dataOut.writeInt(msgId);
-        dataOut.close();
+		final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+		final DataOutputStream dataOut = new DataOutputStream(byteOut);
+		dataOut.writeInt(msgId);
+		dataOut.close();
 
-		DatagramSocket piSocket = pi.create();
+		DatagramSocket piSocket = pi.getSocket();
 		final byte[] bytes = byteOut.toByteArray();
 
 		DatagramPacket piPacket = new DatagramPacket(bytes, bytes.length, ip, port);
 		piSocket.connect(ip, port);
 
-		//System.out.println("IsBound : " + piSocket.isBound());
-		//System.out.println("isConnected : " + piSocket.isConnected());
-		//System.out.println("InetAddress : " + piSocket.getInetAddress());
-		//System.out.println("Port : " + piSocket.getPort());
-		//System.out.println("Remote socket address : " + piSocket.getRemoteSocketAddress());
-		//System.out.println("Local socket address : " + piSocket.getLocalSocketAddress());
+		// System.out.println("IsBound : " + piSocket.isBound());
+		// System.out.println("isConnected : " + piSocket.isConnected());
+		// System.out.println("InetAddress : " + piSocket.getInetAddress());
+		// System.out.println("Port : " + piSocket.getPort());
+		// System.out.println("Remote socket address : " +
+		// piSocket.getRemoteSocketAddress());
+		// System.out.println("Local socket address : " +
+		// piSocket.getLocalSocketAddress());
 
 		// Handle receiving by pj
 		piSocket.send(piPacket);
 
-		pi.close();
 		System.out.println("Received msg with ID: ");
-		
+
 	}
-	
+
 	public void deliverMessage(Integer msgId) {
 		if (this.isDelivered(msgId))
 			System.out.println("Delivered msg with ID: " + msgId);
-		else 
+		else
 			this.delivered.add(msgId);
 	}
 

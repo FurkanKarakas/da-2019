@@ -18,7 +18,6 @@ public class Process extends Thread {
 	private DatagramSocket socket;
 	static int messageID = 0;
 
-	
 	public DatagramSocket create() throws SocketException {
 		this.socket = new DatagramSocket(this.port, this.ip);
 		return this.socket;
@@ -32,6 +31,11 @@ public class Process extends Thread {
 		this.port = port;
 		this.processId = processId;
 		this.ip = ip;
+		try {
+			this.socket = new DatagramSocket(this.port, this.ip);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
 		SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
@@ -70,6 +74,8 @@ public class Process extends Thread {
 		public void handle(Signal signal) {
 
 			System.out.format("Handling signal: %s\n", signal.toString());
+			p.interrupt();
+			System.exit(0);
 		}
 	}
 
@@ -85,6 +91,7 @@ public class Process extends Thread {
 		public void handle(Signal signal) {
 			System.out.format("Handling signal: %s\n", signal.toString());
 			p.interrupt();
+			System.exit(0);
 		}
 	}
 
@@ -100,9 +107,10 @@ public class Process extends Thread {
 		public void handle(Signal signal) {
 			System.out.format("Handling signal: %s\n", signal.toString());
 			p.interrupt();
+			System.exit(0);
 		}
 	}
-	
+
 	public InetAddress getIp() {
 		return ip;
 	}
