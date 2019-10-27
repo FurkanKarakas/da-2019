@@ -40,17 +40,15 @@ public class Da_proc {
                     pi = new Process(piAddr, n, Integer.parseInt(params[2]));
 
                     if (n != 3) {
-                        System.out.println("Sending msg!");
-                        Message msg = new Message("Hey cmd process!");
+                        Message msg = new Message("Hey cmd process!", 12003, InetAddress.getByName("127.0.0.1"));
                         PerfectLinks pipl = new PerfectLinks(pi);
-                        pipl.sendMessage(msg.getId(), 12003, InetAddress.getByName("127.0.0.1"));
+                        pipl.sendMessage(msg);
                     }
                 }
             }
             sc.close();
 
-            Listener listener = new Listener(pi);
-            listener.start();
+            pi.listen();
         }
     }
 

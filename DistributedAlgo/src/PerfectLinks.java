@@ -12,55 +12,42 @@
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class PerfectLinks {
 	private Process pi;
+
 	private ArrayList<Integer> delivered;
+	
 
 	public PerfectLinks(Process pi) {
 		this.pi = pi;
-		this.delivered = new ArrayList<Integer>();
 	}
 
-	public void sendMessage(Integer msgId, Integer port, InetAddress ip) throws IOException {
+	public void sendMessage(Message msg) throws IOException {
 		// Handle sending by pi
+		
+		Integer port = msg.getPort();
+		InetAddress ip = msg.getInetAddr();
 
-		final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-		final DataOutputStream dataOut = new DataOutputStream(byteOut);
-		dataOut.writeInt(msgId);
+		final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
+		final ObjectOutputStream dataOut = new ObjectOutputStream(objectOut);
+		dataOut.writeObject(msg);
 		dataOut.close();
 
 		DatagramSocket piSocket = pi.getSocket();
-		final byte[] bytes = byteOut.toByteArray();
+		final byte[] data = objectOut.toByteArray();
 
-		DatagramPacket piPacket = new DatagramPacket(bytes, bytes.length, ip, port);
+		DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
 		piSocket.connect(ip, port);
 
-		// System.out.println("IsBound : " + piSocket.isBound());
-		// System.out.println("isConnected : " + piSocket.isConnected());
-		// System.out.println("InetAddress : " + piSocket.getInetAddress());
-		// System.out.println("Port : " + piSocket.getPort());
-		// System.out.println("Remote socket address : " +
-		// piSocket.getRemoteSocketAddress());
-		// System.out.println("Local socket address : " +
-		// piSocket.getLocalSocketAddress());
-
-		// Handle receiving by pj
 		piSocket.send(piPacket);
+		if (!msg.getM().equals("ACK"))
+			this.pi.addMsg(msg);
 
-		System.out.println("Received msg with ID: ");
+		System.out.println("Send msg: " + msg.getM());
 
-	}
-
-	public void deliverMessage(Integer msgId) {
-		if (this.isDelivered(msgId))
-			System.out.println("Delivered msg with ID: " + msgId);
-		else
-			this.delivered.add(msgId);
-	}
-
-	public boolean isDelivered(Integer mId) {
-		return this.delivered.contains(mId);
 	}
 
 	public Process getPi() {
