@@ -1,32 +1,27 @@
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 
 public class BestEffortBroadcast {
 
-	// private Process senderProcess;
-	// private ArrayList<Process> S;
-	private ArrayList<PerfectLinks> Spl;
+	private Process senderProcess;
+        private ArrayList<Message> messages;
+        private ArrayList<InetAddress> inetAdresses;
+//	private ArrayList<Process> S;
+	private PerfectLinks perfectLinks;
 
-	public BestEffortBroadcast(Process senderProcess, ArrayList<Process> S) {
-		// this.senderProcess = senderProcess;
-		// this.S = S;
-		// for (Process pi : S) {
-		// this.Spl.add(new PerfectLinks(senderProcess, pi));
-		// }
+	public BestEffortBroadcast(Process senderProcess) {
+		 this.senderProcess = senderProcess;
+                 this.perfectLinks=new PerfectLinks(senderProcess);
 	}
 
-	public void sendMessage(Integer msgId) throws IOException {
-		// for (PerfectLinks pl : Spl) {
-		// pl.sendMessage(msgId);
-		// }
+	public void sendMessage() throws IOException {
+                    for(Message message : messages){
+                        perfectLinks.sendMessage(message);
+                    }
 	}
 
 	public void deliverMessage(Process pi, Integer msgId) {
-		for (PerfectLinks pl : Spl) {
-			// if (pl.getPj().getProcessId() == pi.getProcessId()) {
-			pl.deliverMessage(msgId);
-			break;
-			// }
-		}
+		
 	}
 }
