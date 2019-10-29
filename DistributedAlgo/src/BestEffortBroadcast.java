@@ -6,13 +6,13 @@ public class BestEffortBroadcast {
 
 	private Process senderProcess;
         private ArrayList<Message> messages;
-        private ArrayList<InetAddress> inetAdresses;
 //	private ArrayList<Process> S;
 	private PerfectLinks perfectLinks;
 
-	public BestEffortBroadcast(Process senderProcess) {
+	public BestEffortBroadcast(Process senderProcess, ArrayList<Message> messages) {
 		 this.senderProcess = senderProcess;
                  this.perfectLinks=new PerfectLinks(senderProcess);
+                 this.messages=messages;
 	}
 
 	public void sendMessage() throws IOException {
