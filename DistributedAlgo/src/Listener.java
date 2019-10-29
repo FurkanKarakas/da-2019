@@ -30,15 +30,16 @@ public class Listener extends Thread {
 					if (!obj.getM().equals("ACK")) {
 						PerfectLinks ackLink = new PerfectLinks(this.process);
 						Message ack = new Message("ACK", senderPort, senderIp, obj.getId());
-						ackLink.sendMessage(ack);
+						ackLink.sendMessage(ack, dpReceive.getAddress(), dpReceive.getPort(), 1);
 						System.out.println("Received message: " + obj.getM());
 					} else {
 						this.process.removeMsg(obj);
 					}
 				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+			} catch (SocketTimeoutException e) {
+				// System.out.println("Timeout reached.");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

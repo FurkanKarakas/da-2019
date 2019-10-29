@@ -10,24 +10,25 @@
 3) (No creation) No message is delivered unless it was sent.
 */
 import java.net.*;
+//import java.util.concurrent.TimeoutException;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
+//import java.util.ArrayList;
+//import java.util.Timer;
+//import java.util.TimerTask;
 
-public class PerfectLinks {
+public class PerfectLinks extends Thread {
 	private Process pi;
 
-	private ArrayList<Integer> delivered;
+	// private ArrayList<Integer> delivered;
 
 	public PerfectLinks(Process pi) {
 		this.pi = pi;
 	}
 
-	public boolean sendMessage(Message msg) throws IOException {
+	public boolean sendMessage(Message msg, InetAddress destIP, int destPort, int numberattempts) throws IOException {
 		// Handle sending by pi
-		Integer port = msg.getPort();
-		InetAddress ip = msg.getInetAddr();
+		Integer port = destPort;
+		InetAddress ip = destIP;
 
 		final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
 		final ObjectOutputStream dataOut = new ObjectOutputStream(objectOut);
@@ -35,44 +36,46 @@ public class PerfectLinks {
 		dataOut.close();
 
 		DatagramSocket piSocket = pi.getSocket();
+		piSocket.setSoTimeout(10);
 		final byte[] data = objectOut.toByteArray();
 
 		DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
 		piSocket.connect(ip, port);
 
-		piSocket.send(piPacket);
-		if (!msg.getM().equals("ACK"))
-			this.pi.addMsg(msg);
-
 		System.out.println("Send msg: " + msg.getM());
 
-		DatagramSocket socket = this.pi.getSocket();
 		byte[] receive = new byte[65535];
 		DatagramPacket dpReceive = null;
-		while (true) {
-			dpReceive = new DatagramPacket(receive, receive.length);
-			try {
-				socket.receive(dpReceive);
-				byte[] msgBytes = dpReceive.getData();
-				Integer senderPort = dpReceive.getPort();
-				InetAddress senderIp = dpReceive.getAddress();
+		if (msg.getM().equals("ACK")) {
+			piSocket.send(piPacket);
+		} else {
+			this.pi.addMsg(msg);
+			for (int i = 0; i < numberattempts; i++) {
+				piSocket.send(piPacket);
 
-				ByteArrayInputStream bis = new ByteArrayInputStream(msgBytes);
-				ObjectInputStream ois = new ObjectInputStream(bis);
+				dpReceive = new DatagramPacket(receive, receive.length);
 				try {
-					Message obj = (Message) ois.readObject();
-					if (obj.getM().equals("ACK")) {
-						this.pi.removeMsg(obj);
-						if (obj.getId().equals(msg.getId())) {
-							return true;
+					piSocket.receive(dpReceive);
+					byte[] msgBytes = dpReceive.getData();
+
+					ByteArrayInputStream bis = new ByteArrayInputStream(msgBytes);
+					ObjectInputStream ois = new ObjectInputStream(bis);
+					try {
+						Message obj = (Message) ois.readObject();
+						if (obj.getM().equals("ACK")) {
+							if (obj.getId().equals(msg.getId())) {
+								this.pi.removeMsg(msg);
+								return true;
+							}
 						}
+					} catch (ClassNotFoundException e) {
+						e.printStackTrace();
 					}
-				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
+				} catch (SocketTimeoutException e) {
+					// System.out.println("Timeout reached.");
+				} catch (IOException e) {
 					e.printStackTrace();
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
 		}
 
