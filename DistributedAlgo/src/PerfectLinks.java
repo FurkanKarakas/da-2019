@@ -83,6 +83,13 @@ public class PerfectLinks extends Thread {
 
 	}
 
+	// Implement the thread execution
+	public void run(Message msg, InetAddress destIP, int destPort, int numberattempts) {
+		// TODO: Implement sendMessage in a parallel execution in a thread. Run()
+		// function is void.
+		// this.sendMessage(msg, destIP, destPort, numberattempts);
+	}
+
 	public Process getPi() {
 		return pi;
 	}

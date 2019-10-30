@@ -33,6 +33,7 @@ public class Listener extends Thread {
 						ackLink.sendMessage(ack, dpReceive.getAddress(), dpReceive.getPort(), 1);
 						System.out.println("Received message: " + obj.getM());
 					} else {
+						System.out.println("Received message: " + obj.getM());
 						this.process.removeMsg(obj);
 					}
 				} catch (ClassNotFoundException e) {
