@@ -16,6 +16,7 @@ public class Listener extends Thread {
 		byte[] receive = new byte[65535];
 		DatagramPacket dpReceive = null;
 		while (true) {
+			System.out.println("Start listener.");
 			dpReceive = new DatagramPacket(receive, receive.length);
 			try {
 				socket.receive(dpReceive);
@@ -28,9 +29,10 @@ public class Listener extends Thread {
 				try {
 					Message obj = (Message) ois.readObject();
 					if (!obj.getM().equals("ACK")) {
-						PerfectLinks ackLink = new PerfectLinks(this.process);
 						Message ack = new Message("ACK", senderPort, senderIp, obj.getId());
-						ackLink.sendMessage(ack, dpReceive.getAddress(), dpReceive.getPort(), 1);
+						PerfectLinks ackLink = new PerfectLinks(this.process, ack, dpReceive.getAddress(), dpReceive.getPort(), 1);
+						ackLink.start();
+
 						System.out.println("Received message: " + obj.getM());
 					} else {
 						System.out.println("Received message: " + obj.getM());

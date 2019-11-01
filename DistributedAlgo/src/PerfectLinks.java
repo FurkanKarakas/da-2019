@@ -18,84 +18,62 @@ import java.io.*;
 
 public class PerfectLinks extends Thread {
 	private Process pi;
+	private Message msg;
+	private InetAddress destIP;
+	private Integer destPort;
+	private Integer numberattempts;
 
 	// private ArrayList<Integer> delivered;
 
-	public PerfectLinks(Process pi) {
+	public PerfectLinks(Process pi, Message m, InetAddress destIP, int destPort, int numberattempts) {
 		this.pi = pi;
+		this.msg = m;
+		this.destIP = destIP;
+		this.destPort = destPort;
+		this.numberattempts = numberattempts;
 	}
-
-	public boolean sendMessage(Message msg, InetAddress destIP, int destPort, int numberattempts) throws IOException {
-		// Handle sending by pi
+	
+	public void run() {
 		Integer port = destPort;
 		InetAddress ip = destIP;
-
+		System.out.println("Start perfect links.");
 		final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
-		final ObjectOutputStream dataOut = new ObjectOutputStream(objectOut);
-		dataOut.writeObject(msg);
-		dataOut.close();
+		ObjectOutputStream dataOut;
+		try {
+			dataOut = new ObjectOutputStream(objectOut);
+			dataOut.writeObject(msg);
+			dataOut.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 
 		DatagramSocket piSocket = pi.getSocket();
-		piSocket.setSoTimeout(10);
 		final byte[] data = objectOut.toByteArray();
 
 		DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
+		System.out.println("Connecting to: " + ip + " " + port);
 		piSocket.connect(ip, port);
 
 		System.out.println("Send msg: " + msg.getM());
-
-		byte[] receive = new byte[65535];
-		DatagramPacket dpReceive = null;
-		if (msg.getM().equals("ACK")) {
-			piSocket.send(piPacket);
-		} else {
-			this.pi.addMsg(msg);
-			for (int i = 0; i < numberattempts; i++) {
-				piSocket.send(piPacket);
-
-				dpReceive = new DatagramPacket(receive, receive.length);
-				try {
-					piSocket.receive(dpReceive);
-					byte[] msgBytes = dpReceive.getData();
-
-					ByteArrayInputStream bis = new ByteArrayInputStream(msgBytes);
-					ObjectInputStream ois = new ObjectInputStream(bis);
-					try {
-						Message obj = (Message) ois.readObject();
-						if (obj.getM().equals("ACK")) {
-							if (obj.getId().equals(msg.getId())) {
-								this.pi.removeMsg(msg);
-								return true;
-							}
-						}
-					} catch (ClassNotFoundException e) {
-						e.printStackTrace();
-					}
-				} catch (SocketTimeoutException e) {
-					// System.out.println("Timeout reached.");
-				} catch (IOException e) {
-					e.printStackTrace();
+		
+		try {
+			if (msg.getM().equals("ACK")) {
+					piSocket.send(piPacket);
+	
+			} else {
+				this.pi.addMsg(msg);
+				for (int i = 0; i < numberattempts; i++) {
+					piSocket.send(piPacket);
 				}
 			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 
-		return false;
-
 	}
 
-	// Implement the thread execution
-	public void run(Message msg, InetAddress destIP, int destPort, int numberattempts) {
-		// TODO: Implement sendMessage in a parallel execution in a thread. Run()
-		// function is void.
-		// this.sendMessage(msg, destIP, destPort, numberattempts);
-	}
-
-	public Process getPi() {
-		return pi;
-	}
-
-	public void setPi(Process pi) {
-		this.pi = pi;
-	}
 
 }

@@ -41,8 +41,8 @@ public class Da_proc {
 
                     if (n != 3) {
                         Message msg = new Message("Hey cmd process!", 12003, InetAddress.getByName("127.0.0.1"));
-                        PerfectLinks pipl = new PerfectLinks(pi);
-                        pipl.sendMessage(msg, InetAddress.getByName("127.0.0.1"), 12003, 1);
+                        PerfectLinks pipl = new PerfectLinks(pi, msg, InetAddress.getByName("127.0.0.1"), 12003, 1);
+                        pipl.start();
                     }
                 }
             }

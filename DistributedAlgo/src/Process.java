@@ -161,4 +161,8 @@ public class Process extends Thread {
 	public void setSndMsgs(ArrayList<Message> sndMsgs) {
 		this.sndMsgs = sndMsgs;
 	}
+	
+	public boolean isDelivered(Message m) {
+		return this.getSndMsgs().contains(m) ? false : true;
+	}
 }
