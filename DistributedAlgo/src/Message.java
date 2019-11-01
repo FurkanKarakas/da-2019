@@ -52,6 +52,9 @@ public class Message implements Serializable {
 	}
 
 	public boolean equals(Object o) {
+		if (o == null)
+			return false;
+
 		Message msg2 = (Message) o;
 		return id == msg2.id;
 	}

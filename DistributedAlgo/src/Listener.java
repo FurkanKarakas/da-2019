@@ -12,11 +12,11 @@ public class Listener extends Thread {
 	}
 
 	public void run() {
+		System.out.println("Start listener.");
 		DatagramSocket socket = this.process.getSocket();
 		byte[] receive = new byte[65535];
 		DatagramPacket dpReceive = null;
 		while (true) {
-			System.out.println("Start listener.");
 			dpReceive = new DatagramPacket(receive, receive.length);
 			try {
 				socket.receive(dpReceive);
@@ -32,10 +32,8 @@ public class Listener extends Thread {
 						Message ack = new Message("ACK", senderPort, senderIp, obj.getId());
 						PerfectLinks ackLink = new PerfectLinks(this.process, ack, dpReceive.getAddress(), dpReceive.getPort(), 1);
 						ackLink.start();
-
 						System.out.println("Received message: " + obj.getM());
 					} else {
-						System.out.println("Received message: " + obj.getM());
 						this.process.removeMsg(obj);
 					}
 				} catch (ClassNotFoundException e) {

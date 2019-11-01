@@ -31,12 +31,13 @@ public class PerfectLinks extends Thread {
 		this.destIP = destIP;
 		this.destPort = destPort;
 		this.numberattempts = numberattempts;
+		
 	}
 	
 	public void run() {
 		Integer port = destPort;
 		InetAddress ip = destIP;
-		System.out.println("Start perfect links.");
+
 		final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
 		ObjectOutputStream dataOut;
 		try {
@@ -44,7 +45,6 @@ public class PerfectLinks extends Thread {
 			dataOut.writeObject(msg);
 			dataOut.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -53,23 +53,22 @@ public class PerfectLinks extends Thread {
 		final byte[] data = objectOut.toByteArray();
 
 		DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
-		System.out.println("Connecting to: " + ip + " " + port);
-		piSocket.connect(ip, port);
-
-		System.out.println("Send msg: " + msg.getM());
+		
+		
 		
 		try {
 			if (msg.getM().equals("ACK")) {
-					piSocket.send(piPacket);
+				System.out.println("Send msg: " + msg.getM());
+				piSocket.send(piPacket);
 	
 			} else {
 				this.pi.addMsg(msg);
 				for (int i = 0; i < numberattempts; i++) {
-					piSocket.send(piPacket);
+					if (!this.pi.isDelivered(msg))
+						piSocket.send(piPacket);
 				}
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

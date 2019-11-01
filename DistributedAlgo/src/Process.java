@@ -9,6 +9,7 @@ import sun.misc.SignalHandler;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
 
@@ -17,15 +18,20 @@ public class Process extends Thread {
 	private Integer port;
 	private Integer processId;
 	private DatagramSocket socket;
-
+	private ArrayList<InetSocketAddress> processes;
 	private ArrayList<Message> sndMsgs = null;
 	private Listener pListener = null;
 
-	public Process(InetAddress ip, Integer processId, Integer port) throws SocketException {
+	public Process(InetAddress ip, Integer processId, Integer port) {
 		this.port = port;
 		this.processId = processId;
 		this.ip = ip;
-		this.socket = new DatagramSocket(this.port, this.ip);
+		try {
+			this.socket = new DatagramSocket(this.port, this.ip);
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			System.out.println("Failed to create a socket!");
+		}
 
 		this.sndMsgs = new ArrayList<Message>();
 
@@ -71,6 +77,14 @@ public class Process extends Thread {
 	public void addMsg(Message m) {
 		if (!sndMsgs.contains(m))
 			sndMsgs.add(m);
+	}
+
+	public ArrayList<InetSocketAddress> getProcesses() {
+		return processes;
+	}
+
+	public void setProcesses(ArrayList<InetSocketAddress> processes) {
+		this.processes = processes;
 	}
 
 	public void removeMsg(Message m) {
@@ -137,6 +151,8 @@ public class Process extends Thread {
 	public DatagramSocket getSocket() {
 		return socket;
 	}
+	
+	
 
 	public Integer getPort() {
 		return port;

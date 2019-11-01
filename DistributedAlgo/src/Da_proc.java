@@ -11,7 +11,9 @@
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Scanner;
+
 //import java.util.concurrent.TimeUnit;
 
 public class Da_proc {
@@ -32,23 +34,31 @@ public class Da_proc {
             Process pi = null;
             // Parse first line from membership file that has total numbers of processes
             Integer.parseInt(sc.nextLine());
-
+            
+            ArrayList<InetSocketAddress> processes = new ArrayList<InetSocketAddress>();
             while (sc.hasNextLine()) {
                 String[] params = sc.nextLine().trim().split(" ");
+                
+                InetAddress piAddr = InetAddress.getByName(params[1]);
+                Integer port = Integer.parseInt(params[2]);
+                InetSocketAddress sa = new InetSocketAddress(piAddr, port);
+                processes.add(sa);
                 if (Integer.parseInt(params[0]) == n) {
-                    InetAddress piAddr = InetAddress.getByName(params[1]);
-                    pi = new Process(piAddr, n, Integer.parseInt(params[2]));
-
-                    if (n != 3) {
-                        Message msg = new Message("Hey cmd process!", 12003, InetAddress.getByName("127.0.0.1"));
-                        PerfectLinks pipl = new PerfectLinks(pi, msg, InetAddress.getByName("127.0.0.1"), 12003, 1);
-                        pipl.start();
-                    }
+                	pi = new Process(piAddr, n, port);
                 }
             }
+
+            pi.setProcesses(processes);
             sc.close();
 
             pi.listen();
+            
+            if (1 == n) {
+                Message msg = new Message("Hey cmd process!", 12003, InetAddress.getByName("127.0.0.1"));
+                BestEffortBroadcast beb = new BestEffortBroadcast(pi, msg);
+                beb.sendMessage();
+            }
+            
         }
     }
 
