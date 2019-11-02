@@ -7,20 +7,28 @@
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
-public class Process extends Thread {
+public class Process {
 	private InetAddress ip;
 	private Integer port;
 	private Integer processId;
 	private DatagramSocket socket;
 	private ArrayList<InetSocketAddress> processes;
-	private ArrayList<Message> sndMsgs = null;
-	private Listener pListener = null;
+	private volatile ConcurrentHashMap<Message, Boolean> ackMsgs = new ConcurrentHashMap<Message, Boolean>();
 
 	public Process(InetAddress ip, Integer processId, Integer port) {
 		this.port = port;
@@ -32,52 +40,22 @@ public class Process extends Thread {
 			// TODO Auto-generated catch block
 			System.out.println("Failed to create a socket!");
 		}
+		new Listener(ackMsgs).start();
 
-		this.sndMsgs = new ArrayList<Message>();
-
-		SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
-		SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
+		//SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
+		//SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
 		// SigHandlerUsr2 sigHandlerUsr2 = new SigHandlerUsr2(this);
 
 		Signal signalInt = new Signal("INT");
 		Signal signalTerm = new Signal("TERM");
 		// Signal signalUsr2 = new Signal("USR2");
 
-		Signal.handle(signalInt, sigHandlerInt);
-		Signal.handle(signalTerm, sigHandlerTerm);
+		//Signal.handle(signalInt, sigHandlerInt);
+		//Signal.handle(signalTerm, sigHandlerTerm);
 		// Signal.handle(signalUsr2, sigHandlerUsr2);
 
-		this.start();
 	}
 
-	public void run() {
-		while (!Thread.currentThread().isInterrupted()) {
-			try {
-				Thread.sleep(100);
-			} catch (Exception e) {
-				// exception
-			}
-		}
-	}
-
-	public DatagramSocket create() throws SocketException {
-		this.socket = new DatagramSocket(this.port, this.ip);
-		return this.socket;
-	}
-
-	public void close() {
-		this.socket.close();
-	}
-
-	public void listen() {
-		this.pListener = new Listener(this);
-		this.pListener.start();
-	}
-
-	public void addMsg(Message m) {
-		if (!sndMsgs.contains(m))
-			sndMsgs.add(m);
-	}
 
 	public ArrayList<InetSocketAddress> getProcesses() {
 		return processes;
@@ -86,11 +64,7 @@ public class Process extends Thread {
 	public void setProcesses(ArrayList<InetSocketAddress> processes) {
 		this.processes = processes;
 	}
-
-	public void removeMsg(Message m) {
-		sndMsgs.remove(m);
-	}
-
+/*
 	public static class SigHandlerUsr2 implements SignalHandler {
 		Process p;
 
@@ -139,7 +113,11 @@ public class Process extends Thread {
 			System.exit(0);
 		}
 	}
-
+*/
+	public void sendMessage(Message m, InetAddress destIP, int destPort) {
+		new Sender(m, destIP, destPort, ackMsgs).start();
+	}
+	
 	public InetAddress getIp() {
 		return ip;
 	}
@@ -152,8 +130,6 @@ public class Process extends Thread {
 		return socket;
 	}
 	
-	
-
 	public Integer getPort() {
 		return port;
 	}
@@ -170,15 +146,132 @@ public class Process extends Thread {
 		this.processId = processId;
 	}
 
-	public ArrayList<Message> getSndMsgs() {
-		return sndMsgs;
-	}
-
-	public void setSndMsgs(ArrayList<Message> sndMsgs) {
-		this.sndMsgs = sndMsgs;
+	public boolean isDelivered(Message msg) {
+		return this.ackMsgs.get(msg);
 	}
 	
-	public boolean isDelivered(Message m) {
-		return this.getSndMsgs().contains(m) ? false : true;
+	public void setMsgStatus(Message msg, boolean status) {
+		this.ackMsgs.put(msg, status);
 	}
+
+	public ConcurrentHashMap<Message, Boolean> getAckMsgs() {
+		return ackMsgs;
+	}
+
+
+
+	public class Listener extends Thread {
+		
+		ConcurrentHashMap<Message, Boolean> ackMsgs;
+		
+		public Listener(ConcurrentHashMap<Message, Boolean> ackMsgs) {
+			this.ackMsgs = ackMsgs;
+		}
+		
+		@Override
+		public void run() {
+			System.out.println("Start listener.");
+			DatagramSocket socket = Process.this.getSocket();
+			byte[] receive = new byte[65535];
+			DatagramPacket dpReceive = null;
+			while (true) {
+				dpReceive = new DatagramPacket(receive, receive.length);
+				try {
+					socket.receive(dpReceive);
+					byte[] msgBytes = dpReceive.getData();
+					Integer senderPort = dpReceive.getPort();
+					InetAddress senderIp = dpReceive.getAddress();
+
+					ByteArrayInputStream bis = new ByteArrayInputStream(msgBytes);
+					ObjectInputStream ois = new ObjectInputStream(bis);
+					try {
+						Message msg = (Message) ois.readObject();
+						if (!msg.isAck()) {
+							Message ack = new Message(msg.getM(), senderPort, senderIp, msg.getId(), true);
+							Process.this.sendMessage(ack, senderIp, senderPort);
+							System.out.println("Received message: " + msg.getM());
+						} else {
+							System.out.println("Does this ever happen?");
+							this.ackMsgs.put(msg, true);
+						}
+					} catch (ClassNotFoundException e) {
+						e.printStackTrace();
+					}
+				} catch (SocketTimeoutException e) {
+					// System.out.println("Timeout reached.");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+			}
+		}
+
+	}
+	
+	public class Sender extends Thread {
+		
+		private Message msg;
+		private InetAddress destIP;
+		private Integer destPort;
+		private ConcurrentHashMap<Message, Boolean> ackMsgs;
+		
+		public Sender(Message m, InetAddress destIP, int destPort, ConcurrentHashMap<Message, Boolean> ackMsgs) {
+			this.msg = m;
+			this.destIP = destIP;
+			this.destPort = destPort;
+			this.ackMsgs = ackMsgs;
+		}
+
+		@Override
+		public void run() {
+			Integer port = destPort;
+			InetAddress ip = destIP;
+	
+			final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
+			ObjectOutputStream dataOut;
+			try {
+				dataOut = new ObjectOutputStream(objectOut);
+				dataOut.writeObject(msg);
+				dataOut.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+	
+			DatagramSocket piSocket = Process.this.getSocket();
+			final byte[] data = objectOut.toByteArray();
+	
+			DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
+			
+			try {
+				if (msg.isAck()) {
+					System.out.println("Send acknowledgement.");
+					piSocket.send(piPacket);
+	
+				} else {
+					this.ackMsgs.put(msg, false);
+					while (true) {
+						if (!Process.this.isDelivered(msg)) {
+							System.out.println(msg.getM());
+							piSocket.send(piPacket);
+							try {
+								TimeUnit.MILLISECONDS.sleep(1000);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+						else {
+							System.out.println("Breaking loop");
+							break;
+						}
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+
 }

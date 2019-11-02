@@ -13,6 +13,7 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 
 //import java.util.concurrent.TimeUnit;
 
@@ -24,7 +25,7 @@ public class Da_proc {
      * @throws InterruptedException
      */
     public static void main(String[] args) throws FileNotFoundException, UnknownHostException, IOException,
-            ClassNotFoundException, InterruptedException {
+            ClassNotFoundException, InterruptedException { 
         if (args.length > 0) {
             int n = Integer.parseInt(args[0]);
             String fileName = args[1];
@@ -50,13 +51,10 @@ public class Da_proc {
 
             pi.setProcesses(processes);
             sc.close();
-
-            pi.listen();
             
-            if (1 == n) {
-                Message msg = new Message("Hey cmd process!", 12003, InetAddress.getByName("127.0.0.1"));
-                BestEffortBroadcast beb = new BestEffortBroadcast(pi, msg);
-                beb.sendMessage();
+            if (1 != n) {
+            	Message m = new Message("Hey process 1", pi.getPort(), InetAddress.getByName("127.0.0.1"), 1, false);
+                pi.sendMessage(m, InetAddress.getByName("127.0.0.1"), 12001);
             }
             
         }

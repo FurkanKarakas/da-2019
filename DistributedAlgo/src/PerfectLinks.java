@@ -10,69 +10,94 @@
 3) (No creation) No message is delivered unless it was sent.
 */
 import java.net.*;
+import java.util.concurrent.TimeUnit;
 //import java.util.concurrent.TimeoutException;
 import java.io.*;
 //import java.util.ArrayList;
 //import java.util.Timer;
 //import java.util.TimerTask;
-
-public class PerfectLinks extends Thread {
+/*
+public class PerfectLinks {
+	
 	private Process pi;
 	private Message msg;
 	private InetAddress destIP;
 	private Integer destPort;
-	private Integer numberattempts;
-
 	// private ArrayList<Integer> delivered;
 
-	public PerfectLinks(Process pi, Message m, InetAddress destIP, int destPort, int numberattempts) {
+	public PerfectLinks(Process pi, Message m, InetAddress destIP, int destPort) {
 		this.pi = pi;
 		this.msg = m;
 		this.destIP = destIP;
 		this.destPort = destPort;
-		this.numberattempts = numberattempts;
-		
 	}
 	
-	public void run() {
-		Integer port = destPort;
-		InetAddress ip = destIP;
-
-		final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
-		ObjectOutputStream dataOut;
-		try {
-			dataOut = new ObjectOutputStream(objectOut);
-			dataOut.writeObject(msg);
-			dataOut.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-
-		DatagramSocket piSocket = pi.getSocket();
-		final byte[] data = objectOut.toByteArray();
-
-		DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
-		
-		
-		
-		try {
-			if (msg.getM().equals("ACK")) {
-				System.out.println("Send msg: " + msg.getM());
-				piSocket.send(piPacket);
+	public void sendMessage() {
+		new Sender(msg, destIP, destPort).start();
+	}
 	
-			} else {
-				this.pi.addMsg(msg);
-				for (int i = 0; i < numberattempts; i++) {
-					if (!this.pi.isDelivered(msg))
-						piSocket.send(piPacket);
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
+	public class Sender extends Thread {
+		
+		private Message msg;
+		private InetAddress destIP;
+		private Integer destPort;
+		
+		public Sender(Message m, InetAddress destIP, int destPort) {
+			this.msg = m;
+			this.destIP = destIP;
+			this.destPort = destPort;
 		}
 
+		@Override
+		public void run() {
+			Integer port = destPort;
+			InetAddress ip = destIP;
+	
+			final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
+			ObjectOutputStream dataOut;
+			try {
+				dataOut = new ObjectOutputStream(objectOut);
+				dataOut.writeObject(msg);
+				dataOut.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+	
+			DatagramSocket piSocket = PerfectLinks.this.pi.getSocket();
+			final byte[] data = objectOut.toByteArray();
+	
+			DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
+			
+			try {
+				if (msg.isAck()) {
+					System.out.println("Send acknowledgement.");
+					piSocket.send(piPacket);
+	
+				} else {
+					Process.setMsgStatus(msg, false);
+					while (true) {
+						if (!Process.isDelivered(msg)) {
+							piSocket.send(piPacket);
+							try {
+								TimeUnit.MILLISECONDS.sleep(1000);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+						else {
+							System.out.println("Breaking loop");
+							break;
+						}
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 
 }
+*/
