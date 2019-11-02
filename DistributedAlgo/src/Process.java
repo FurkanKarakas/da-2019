@@ -179,6 +179,7 @@ public class Process extends Thread {
 	}
 	
 	public boolean isDelivered(Message m) {
-		return this.getSndMsgs().contains(m) ? false : true;
+		//return this.getSndMsgs().contains(m) ? false : true;
+                return m.isDelivered();
 	}
 }

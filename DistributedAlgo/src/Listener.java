@@ -34,6 +34,7 @@ public class Listener extends Thread {
 						ackLink.start();
 						System.out.println("Received message: " + obj.getM());
 					} else {
+                                                obj.setDelivered(true);
 						this.process.removeMsg(obj);
 					}
 				} catch (ClassNotFoundException e) {
