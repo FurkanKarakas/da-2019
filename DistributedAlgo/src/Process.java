@@ -1,12 +1,5 @@
-
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -22,14 +15,27 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class Process {
+public class Process extends Thread {
 	private InetAddress ip;
 	private Integer port;
 	private Integer processId;
 	private DatagramSocket socket;
 	private ArrayList<InetSocketAddress> processes;
+	/**
+	 * This is a thread-safe hashmap. In this data structure, we map a given Message
+	 * to a boolean value in order to store if the process has received the
+	 * acknowledgement yet.
+	 */
 	private volatile ConcurrentHashMap<Message, Boolean> ackMsgs = new ConcurrentHashMap<Message, Boolean>();
 
+	/**
+	 * In the constructor of the process, we start listening to the incoming
+	 * messages right away.
+	 * 
+	 * @param ip
+	 * @param processId
+	 * @param port
+	 */
 	public Process(InetAddress ip, Integer processId, Integer port) {
 		this.port = port;
 		this.processId = processId;
@@ -37,25 +43,23 @@ public class Process {
 		try {
 			this.socket = new DatagramSocket(this.port, this.ip);
 		} catch (SocketException e) {
-			// TODO Auto-generated catch block
 			System.out.println("Failed to create a socket!");
 		}
 		new Listener().start();
 
-		//SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
-		//SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
-		// SigHandlerUsr2 sigHandlerUsr2 = new SigHandlerUsr2(this);
+		SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
+		SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
+		SigHandlerUsr2 sigHandlerUsr2 = new SigHandlerUsr2(this);
 
 		Signal signalInt = new Signal("INT");
 		Signal signalTerm = new Signal("TERM");
-		// Signal signalUsr2 = new Signal("USR2");
+		Signal signalUsr2 = new Signal("USR2");
 
-		//Signal.handle(signalInt, sigHandlerInt);
-		//Signal.handle(signalTerm, sigHandlerTerm);
-		// Signal.handle(signalUsr2, sigHandlerUsr2);
+		Signal.handle(signalInt, sigHandlerInt);
+		Signal.handle(signalTerm, sigHandlerTerm);
+		Signal.handle(signalUsr2, sigHandlerUsr2);
 
 	}
-
 
 	public ArrayList<InetSocketAddress> getProcesses() {
 		return processes;
@@ -64,7 +68,7 @@ public class Process {
 	public void setProcesses(ArrayList<InetSocketAddress> processes) {
 		this.processes = processes;
 	}
-/*
+
 	public static class SigHandlerUsr2 implements SignalHandler {
 		Process p;
 
@@ -113,11 +117,19 @@ public class Process {
 			System.exit(0);
 		}
 	}
-*/
+
+	/**
+	 * This method creates a new instance of the sendMessage class, and it makes
+	 * this thread start executing.
+	 * 
+	 * @param m
+	 * @param destIP
+	 * @param destPort
+	 */
 	public void sendMessage(Message m, InetAddress destIP, int destPort) {
 		new Sender(m, destIP, destPort).start();
 	}
-	
+
 	public InetAddress getIp() {
 		return ip;
 	}
@@ -129,7 +141,7 @@ public class Process {
 	public DatagramSocket getSocket() {
 		return socket;
 	}
-	
+
 	public Integer getPort() {
 		return port;
 	}
@@ -147,13 +159,13 @@ public class Process {
 	}
 
 	public boolean isDelivered(Message msg) {
-                System.out.println(this.ackMsgs.size());
-                if(this.ackMsgs.get(msg).equals(null)){
-                    return false;
-                }
+		System.out.println(this.ackMsgs.size());
+		if (this.ackMsgs.get(msg).equals(null)) {
+			return false;
+		}
 		return this.ackMsgs.get(msg);
 	}
-	
+
 	public void setMsgStatus(Message msg, boolean status) {
 		this.ackMsgs.put(msg, status);
 	}
@@ -162,10 +174,12 @@ public class Process {
 		return ackMsgs;
 	}
 
-
-
+	/**
+	 * This is a subclass of the class Process, and it extends Thread. It is
+	 * responsible for listening to the incoming messages.
+	 */
 	public class Listener extends Thread {
-		
+
 		@Override
 		public void run() {
 			System.out.println("Start listener.");
@@ -185,18 +199,19 @@ public class Process {
 					try {
 						Message msg = (Message) ois.readObject();
 						if (!msg.isAck()) {
-                                                    if(!msg.isBroadcast()){
-							Message ack = new Message(msg.getM(), msg.getDestinationPort(), msg.getDestinationInetAddr(), msg.getId(), true,false);
-							Process.this.sendMessage(ack, senderIp, senderPort);
-							System.out.println("Received message: " + msg.getM());
-                                                    }else{
-                                                        ArrayList<Message> messages = Process.this.createMessagesList(msg.getId(), false);
-							//Process.this.sendMessage(ack, senderIp, senderPort);
-							//System.out.println("Received message: " + msg.getM());
-                                                        BestEffortBroadcast beb = new BestEffortBroadcast(Process.this);
-                                                        beb.sendMessage(messages);
-                                                        
-                                                    }
+							if (!msg.isBroadcast()) {
+								Message ack = new Message(msg.getM(), msg.getDestinationPort(),
+										msg.getDestinationInetAddr(), msg.getId(), true, false);
+								Process.this.sendMessage(ack, senderIp, senderPort);
+								System.out.println("Received message: " + msg.getM());
+							} else {
+								ArrayList<Message> messages = Process.this.createMessagesList(msg.getId(), false);
+								// Process.this.sendMessage(ack, senderIp, senderPort);
+								// System.out.println("Received message: " + msg.getM());
+								BestEffortBroadcast beb = new BestEffortBroadcast(Process.this);
+								beb.sendMessage(messages);
+
+							}
 						} else {
 							Process.this.ackMsgs.put(msg, true);
 						}
@@ -213,23 +228,28 @@ public class Process {
 		}
 
 	}
-	public ArrayList<Message> createMessagesList(Integer id,boolean broadcast){
-                ArrayList<Message> messages = new ArrayList<Message>();
-                for(InetSocketAddress sa : this.processes){
-                        InetAddress addr = sa.getAddress();
+
+	public ArrayList<Message> createMessagesList(Integer id, boolean broadcast) {
+		ArrayList<Message> messages = new ArrayList<Message>();
+		for (InetSocketAddress sa : this.processes) {
+			InetAddress addr = sa.getAddress();
 			Integer port = sa.getPort();
 			Message m = new Message(sa.toString(), port, addr, id, false, broadcast);
-                        messages.add(m);
-                }
-                return messages;
-        }
-        
+			messages.add(m);
+		}
+		return messages;
+	}
+
+	/**
+	 * This class is a subclass of the class Process, and it is responsible for
+	 * sending messages concurrently.
+	 */
 	public class Sender extends Thread {
-		
+
 		private Message msg;
 		private InetAddress destIP;
 		private Integer destPort;
-		
+
 		public Sender(Message m, InetAddress destIP, int destPort) {
 			this.msg = m;
 			this.destIP = destIP;
@@ -240,7 +260,7 @@ public class Process {
 		public void run() {
 			Integer port = destPort;
 			InetAddress ip = destIP;
-	
+
 			final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
 			ObjectOutputStream dataOut;
 			try {
@@ -250,18 +270,17 @@ public class Process {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
-	
+
 			DatagramSocket piSocket = Process.this.getSocket();
 			final byte[] data = objectOut.toByteArray();
-	
+
 			DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
-			
+
 			try {
 				if (msg.isAck()) {
 					System.out.println("Send acknowledgement.");
 					piSocket.send(piPacket);
-	
+
 				} else {
 					Process.this.ackMsgs.put(msg, false);
 					while (true) {
@@ -271,11 +290,9 @@ public class Process {
 							try {
 								TimeUnit.MILLISECONDS.sleep(1000);
 							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
-						}
-						else
+						} else
 							break;
 					}
 				}
@@ -284,6 +301,5 @@ public class Process {
 			}
 		}
 	}
-
 
 }

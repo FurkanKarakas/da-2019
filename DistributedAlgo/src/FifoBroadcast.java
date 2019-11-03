@@ -12,38 +12,37 @@ import java.util.ArrayList;
  * 
  */
 public class FifoBroadcast {
-    private Process p;
+    // private Process p;
     private ArrayList<Message> messages;
     private static ArrayList<Boolean> delivered = new ArrayList<Boolean>();
     private UniformReliabaleBroadcast urb;
 
     public FifoBroadcast(Process p, ArrayList<Message> messages) {
-        this.p = p;
+        // this.p = p;
         this.messages = messages;
-        if(this.delivered.size()<(messages.get(0).getId()-1)){
-            for(int i=this.delivered.size(); i<messages.get(0).getId();i++){
-                this.delivered.add(false);
+        if (FifoBroadcast.delivered.size() < (messages.get(0).getId() - 1)) {
+            for (int i = FifoBroadcast.delivered.size(); i < messages.get(0).getId(); i++) {
+                FifoBroadcast.delivered.add(false);
             }
         }
-        if(this.delivered.size()==(messages.get(0).getId()-1)){
-            this.delivered.add(false);
-        }       
+        if (FifoBroadcast.delivered.size() == (messages.get(0).getId() - 1)) {
+            FifoBroadcast.delivered.add(false);
+        }
         urb = new UniformReliabaleBroadcast(p, messages);
     }
-    
-    public void sendMessage(){
+
+    public void sendMessage() {
         this.urb.sendMessage();
     }
-    
-    public Boolean canDeliver(Integer id){
-        if(urb.canDeliver() & messages.get(0).getId()==1){
-            this.delivered.set(0, Boolean.TRUE);
+
+    public Boolean canDeliver(Integer id) {
+        if (urb.canDeliver() & messages.get(0).getId() == 1) {
+            FifoBroadcast.delivered.set(0, Boolean.TRUE);
+        } else {
+            if (this.urb.canDeliver() & FifoBroadcast.delivered.get(messages.get(0).getId() - 2).equals(true)) {
+                FifoBroadcast.delivered.set(messages.get(0).getId() - 1, true);
+            }
         }
-        else{
-                if(this.urb.canDeliver() & this.delivered.get(messages.get(0).getId()-2).equals(true)){
-                    this.delivered.set(messages.get(0).getId()-1,true);
-                }   
-        }       
-        return this.delivered.get(messages.get(0).getId()-1);
+        return FifoBroadcast.delivered.get(messages.get(0).getId() - 1);
     }
 }

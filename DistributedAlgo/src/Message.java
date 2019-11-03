@@ -1,7 +1,3 @@
-
-//import java.io.IOException;
-//import java.io.ObjectInputStream;
-//import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.Objects;
@@ -13,28 +9,38 @@ public class Message implements Serializable {
 	private Integer id;
 	private boolean delivered;
 	private boolean isAck;
-        private Integer destinationPort;
-        private InetAddress destinationInetAddr;
-        private boolean broadcast;
-/*
-	public Message(String m, Integer port, InetAddress inetAddr, boolean isAck) {
-		this.m = m;
-		Message.counter += 1;
-		this.id = Message.counter;
-		this.delivered = false;
-		this.isAck = isAck;
-	}
-*/
-	public Message(String m, Integer destinationPort, InetAddress destinationInetAddr, Integer id, boolean isAck, boolean broadcast) {
+	private Integer destinationPort;
+	private InetAddress destinationInetAddr;
+	private boolean broadcast;
+
+	/*
+	 * public Message(String m, Integer port, InetAddress inetAddr, boolean isAck) {
+	 * this.m = m; Message.counter += 1; this.id = Message.counter; this.delivered =
+	 * false; this.isAck = isAck; }
+	 */
+	/**
+	 * This is the constructor of the Message class.
+	 * 
+	 * @param m                   is the content of the message.
+	 * @param destinationPort     is the destination port number.
+	 * @param destinationInetAddr is the destination IP address.
+	 * @param id                  is the unique identifier number of the message.
+	 * @param isAck               specifies whether the given message is an ACK or
+	 *                            not.
+	 * @param broadcast           specifies whether the given message is a broadcast
+	 *                            message or not.
+	 */
+	public Message(String m, Integer destinationPort, InetAddress destinationInetAddr, Integer id, boolean isAck,
+			boolean broadcast) {
 		// For acknowledgments
 		this.m = m;
 		this.id = id;
 		this.delivered = false;
 		this.isAck = isAck;
-                this.destinationInetAddr=destinationInetAddr;
-                this.destinationPort=destinationPort;
-                this.broadcast=broadcast;
-	}       
+		this.destinationInetAddr = destinationInetAddr;
+		this.destinationPort = destinationPort;
+		this.broadcast = broadcast;
+	}
 
 	public String getM() {
 		return m;
@@ -64,42 +70,44 @@ public class Message implements Serializable {
 		this.isAck = isAck;
 	}
 
-        public void setDestinationPort(Integer destinationPort) {
-            this.destinationPort = destinationPort;
-        }
+	public void setDestinationPort(Integer destinationPort) {
+		this.destinationPort = destinationPort;
+	}
 
-        public void setDestinationInetAddr(InetAddress destinationInetAddr) {
-            this.destinationInetAddr = destinationInetAddr;
-        }
+	public void setDestinationInetAddr(InetAddress destinationInetAddr) {
+		this.destinationInetAddr = destinationInetAddr;
+	}
 
-        public Integer getDestinationPort() {
-            return destinationPort;
-        }
+	public Integer getDestinationPort() {
+		return destinationPort;
+	}
 
-        public InetAddress getDestinationInetAddr() {
-            return destinationInetAddr;
-        }
+	public InetAddress getDestinationInetAddr() {
+		return destinationInetAddr;
+	}
 
-        public boolean isBroadcast() {
-            return broadcast;
-        }
+	public boolean isBroadcast() {
+		return broadcast;
+	}
 
-        public void setBroadcast(boolean broadcast) {
-            this.broadcast = broadcast;
-        }
+	public void setBroadcast(boolean broadcast) {
+		this.broadcast = broadcast;
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(id, m);
 	}
-	
+
 	@Override
 	public boolean equals(Object o) {
 		if (o == null)
 			return false;
 
 		Message msg2 = (Message) o;
-                //return(id.equals(msg2.getId()));
-		return (this.destinationPort.equals(msg2.getDestinationPort()) & id.equals(msg2.getId()) & this.destinationInetAddr.equals(msg2.getDestinationInetAddr()));
+		// return(id.equals(msg2.getId()));
+		return (this.destinationPort.equals(msg2.getDestinationPort()) & id.equals(msg2.getId())
+				& this.destinationInetAddr.equals(msg2.getDestinationInetAddr()));
 	}
 
 }
