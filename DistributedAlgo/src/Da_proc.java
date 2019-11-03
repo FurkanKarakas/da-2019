@@ -54,15 +54,17 @@ public class Da_proc {
             sc.close();
             
             if (1 == n) {
-                ArrayList<Message> messages = pi.createMessagesList(1,true);
-            	UniformReliabaleBroadcast urb = new UniformReliabaleBroadcast(pi, messages);
+                ArrayList<Message> messages = pi.createMessagesList(2,true);
+                FifoBroadcast fifoBroadcast= new FifoBroadcast(pi, messages);
+                fifoBroadcast.sendMessage();
+            	//UniformReliabaleBroadcast urb = new UniformReliabaleBroadcast(pi, messages);
                 //BestEffortBroadcast beb = new BestEffortBroadcast(pi);
-                urb.sendMessage();
+                //urb.sendMessage();
                 //beb.sendMessage(messages);
                 //Message message = new Message("Hello", 12002, InetAddress.getByName("127.0.0.1"), 1, false, false);
                 //pi.sendMessage(message, InetAddress.getByName("127.0.0.1"), 12002);
                 TimeUnit.MILLISECONDS.sleep(1000);
-                System.out.println(urb.canDeliver());
+                System.out.println(fifoBroadcast.canDeliver(2));
             }
             
         }

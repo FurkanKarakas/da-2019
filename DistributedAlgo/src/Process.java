@@ -218,7 +218,7 @@ public class Process {
                 for(InetSocketAddress sa : this.processes){
                         InetAddress addr = sa.getAddress();
 			Integer port = sa.getPort();
-			Message m = new Message(sa.toString(), port, addr, 1, false, broadcast);
+			Message m = new Message(sa.toString(), port, addr, id, false, broadcast);
                         messages.add(m);
                 }
                 return messages;
