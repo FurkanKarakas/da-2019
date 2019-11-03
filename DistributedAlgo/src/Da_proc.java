@@ -14,6 +14,7 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 //import java.util.concurrent.TimeUnit;
 
@@ -53,8 +54,15 @@ public class Da_proc {
             sc.close();
             
             if (1 == n) {
-            	BestEffortBroadcast beb = new BestEffortBroadcast(pi, 1);
-                beb.sendMessage();
+                ArrayList<Message> messages = pi.createMessagesList(1,true);
+            	UniformReliabaleBroadcast urb = new UniformReliabaleBroadcast(pi, messages);
+                //BestEffortBroadcast beb = new BestEffortBroadcast(pi);
+                urb.sendMessage();
+                //beb.sendMessage(messages);
+                //Message message = new Message("Hello", 12002, InetAddress.getByName("127.0.0.1"), 1, false, false);
+                //pi.sendMessage(message, InetAddress.getByName("127.0.0.1"), 12002);
+                TimeUnit.MILLISECONDS.sleep(1000);
+                System.out.println(urb.canDeliver());
             }
             
         }

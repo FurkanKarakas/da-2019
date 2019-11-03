@@ -147,6 +147,10 @@ public class Process {
 	}
 
 	public boolean isDelivered(Message msg) {
+                System.out.println(this.ackMsgs.size());
+                if(this.ackMsgs.get(msg).equals(null)){
+                    return false;
+                }
 		return this.ackMsgs.get(msg);
 	}
 	
@@ -181,9 +185,18 @@ public class Process {
 					try {
 						Message msg = (Message) ois.readObject();
 						if (!msg.isAck()) {
-							Message ack = new Message(msg.getM(), senderPort, senderIp, msg.getId(), true);
+                                                    if(!msg.isBroadcast()){
+							Message ack = new Message(msg.getM(), msg.getDestinationPort(), msg.getDestinationInetAddr(), msg.getId(), true,false);
 							Process.this.sendMessage(ack, senderIp, senderPort);
 							System.out.println("Received message: " + msg.getM());
+                                                    }else{
+                                                        ArrayList<Message> messages = Process.this.createMessagesList(msg.getId(), false);
+							//Process.this.sendMessage(ack, senderIp, senderPort);
+							//System.out.println("Received message: " + msg.getM());
+                                                        BestEffortBroadcast beb = new BestEffortBroadcast(Process.this);
+                                                        beb.sendMessage(messages);
+                                                        
+                                                    }
 						} else {
 							Process.this.ackMsgs.put(msg, true);
 						}
@@ -200,12 +213,17 @@ public class Process {
 		}
 
 	}
-	
-<<<<<<< HEAD
-	public boolean isDelivered(Message m) {
-		//return this.getSndMsgs().contains(m) ? false : true;
-                return m.isDelivered();
-=======
+	public ArrayList<Message> createMessagesList(Integer id,boolean broadcast){
+                ArrayList<Message> messages = new ArrayList<Message>();
+                for(InetSocketAddress sa : this.processes){
+                        InetAddress addr = sa.getAddress();
+			Integer port = sa.getPort();
+			Message m = new Message(sa.toString(), port, addr, 1, false, broadcast);
+                        messages.add(m);
+                }
+                return messages;
+        }
+        
 	public class Sender extends Thread {
 		
 		private Message msg;
@@ -265,7 +283,6 @@ public class Process {
 				e.printStackTrace();
 			}
 		}
->>>>>>> f68a066e0cf939f4a2b672cc131e5e2e17aa426d
 	}
 
 

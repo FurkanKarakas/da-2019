@@ -13,6 +13,9 @@ public class Message implements Serializable {
 	private Integer id;
 	private boolean delivered;
 	private boolean isAck;
+        private Integer destinationPort;
+        private InetAddress destinationInetAddr;
+        private boolean broadcast;
 /*
 	public Message(String m, Integer port, InetAddress inetAddr, boolean isAck) {
 		this.m = m;
@@ -22,13 +25,16 @@ public class Message implements Serializable {
 		this.isAck = isAck;
 	}
 */
-	public Message(String m, Integer port, InetAddress inetAddr, Integer id, boolean isAck) {
+	public Message(String m, Integer destinationPort, InetAddress destinationInetAddr, Integer id, boolean isAck, boolean broadcast) {
 		// For acknowledgments
 		this.m = m;
 		this.id = id;
 		this.delivered = false;
 		this.isAck = isAck;
-	}
+                this.destinationInetAddr=destinationInetAddr;
+                this.destinationPort=destinationPort;
+                this.broadcast=broadcast;
+	}       
 
 	public String getM() {
 		return m;
@@ -57,7 +63,30 @@ public class Message implements Serializable {
 	public void setAck(boolean isAck) {
 		this.isAck = isAck;
 	}
-	
+
+        public void setDestinationPort(Integer destinationPort) {
+            this.destinationPort = destinationPort;
+        }
+
+        public void setDestinationInetAddr(InetAddress destinationInetAddr) {
+            this.destinationInetAddr = destinationInetAddr;
+        }
+
+        public Integer getDestinationPort() {
+            return destinationPort;
+        }
+
+        public InetAddress getDestinationInetAddr() {
+            return destinationInetAddr;
+        }
+
+        public boolean isBroadcast() {
+            return broadcast;
+        }
+
+        public void setBroadcast(boolean broadcast) {
+            this.broadcast = broadcast;
+        }
 	@Override
 	public int hashCode() {
 		return Objects.hash(id, m);
@@ -69,7 +98,8 @@ public class Message implements Serializable {
 			return false;
 
 		Message msg2 = (Message) o;
-		return id.equals(msg2.getId());
+                //return(id.equals(msg2.getId()));
+		return (this.destinationPort.equals(msg2.getDestinationPort()) & id.equals(msg2.getId()) & this.destinationInetAddr.equals(msg2.getDestinationInetAddr()));
 	}
 
 }
