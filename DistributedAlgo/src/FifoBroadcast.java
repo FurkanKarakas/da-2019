@@ -37,12 +37,10 @@ public class FifoBroadcast {
     
     public Boolean canDeliver(Integer id){
         if(urb.canDeliver() & messages.get(0).getId()==1){
-            System.out.println("Not OKKK");
             this.delivered.set(0, Boolean.TRUE);
         }
         else{
                 if(this.urb.canDeliver() & this.delivered.get(messages.get(0).getId()-2).equals(true)){
-                    System.out.println("Not OKKK 2");
                     this.delivered.set(messages.get(0).getId()-1,true);
                 }   
         }       
