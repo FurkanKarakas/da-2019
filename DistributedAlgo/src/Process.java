@@ -185,11 +185,7 @@ public class Process {
 							Process.this.sendMessage(ack, senderIp, senderPort);
 							System.out.println("Received message: " + msg.getM());
 						} else {
-							synchronized (Process.this.ackMsgs) {
-								ConcurrentHashMap<Message, Boolean> tmp = new ConcurrentHashMap<Message, Boolean>(Process.this.ackMsgs);
-								tmp.put(msg, true);
-								Process.this.ackMsgs = tmp;
-							}
+							Process.this.ackMsgs.put(msg, true);
 						}
 					} catch (ClassNotFoundException e) {
 						e.printStackTrace();
@@ -244,11 +240,7 @@ public class Process {
 					piSocket.send(piPacket);
 	
 				} else {
-					synchronized (Process.this.ackMsgs) {
-						ConcurrentHashMap<Message, Boolean> tmp = new ConcurrentHashMap<Message, Boolean>(Process.this.ackMsgs);
-						tmp.put(msg, false);
-						Process.this.ackMsgs = tmp;
-					}
+					Process.this.ackMsgs.put(msg, false);
 					while (true) {
 						if (!Process.this.isDelivered(msg)) {
 							System.out.println(msg.getM());
