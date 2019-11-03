@@ -40,7 +40,7 @@ public class Process {
 			// TODO Auto-generated catch block
 			System.out.println("Failed to create a socket!");
 		}
-		new Listener(ackMsgs).start();
+		new Listener().start();
 
 		//SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
 		//SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
@@ -115,7 +115,7 @@ public class Process {
 	}
 */
 	public void sendMessage(Message m, InetAddress destIP, int destPort) {
-		new Sender(m, destIP, destPort, ackMsgs).start();
+		new Sender(m, destIP, destPort).start();
 	}
 	
 	public InetAddress getIp() {
@@ -162,12 +162,6 @@ public class Process {
 
 	public class Listener extends Thread {
 		
-		ConcurrentHashMap<Message, Boolean> ackMsgs;
-		
-		public Listener(ConcurrentHashMap<Message, Boolean> ackMsgs) {
-			this.ackMsgs = ackMsgs;
-		}
-		
 		@Override
 		public void run() {
 			System.out.println("Start listener.");
@@ -191,8 +185,11 @@ public class Process {
 							Process.this.sendMessage(ack, senderIp, senderPort);
 							System.out.println("Received message: " + msg.getM());
 						} else {
-							System.out.println("Does this ever happen?");
-							this.ackMsgs.put(msg, true);
+							synchronized (Process.this.ackMsgs) {
+								ConcurrentHashMap<Message, Boolean> tmp = new ConcurrentHashMap<Message, Boolean>(Process.this.ackMsgs);
+								tmp.put(msg, true);
+								Process.this.ackMsgs = tmp;
+							}
 						}
 					} catch (ClassNotFoundException e) {
 						e.printStackTrace();
@@ -213,13 +210,11 @@ public class Process {
 		private Message msg;
 		private InetAddress destIP;
 		private Integer destPort;
-		private ConcurrentHashMap<Message, Boolean> ackMsgs;
 		
-		public Sender(Message m, InetAddress destIP, int destPort, ConcurrentHashMap<Message, Boolean> ackMsgs) {
+		public Sender(Message m, InetAddress destIP, int destPort) {
 			this.msg = m;
 			this.destIP = destIP;
 			this.destPort = destPort;
-			this.ackMsgs = ackMsgs;
 		}
 
 		@Override
@@ -249,7 +244,11 @@ public class Process {
 					piSocket.send(piPacket);
 	
 				} else {
-					this.ackMsgs.put(msg, false);
+					synchronized (Process.this.ackMsgs) {
+						ConcurrentHashMap<Message, Boolean> tmp = new ConcurrentHashMap<Message, Boolean>(Process.this.ackMsgs);
+						tmp.put(msg, false);
+						Process.this.ackMsgs = tmp;
+					}
 					while (true) {
 						if (!Process.this.isDelivered(msg)) {
 							System.out.println(msg.getM());
@@ -261,10 +260,8 @@ public class Process {
 								e.printStackTrace();
 							}
 						}
-						else {
-							System.out.println("Breaking loop");
+						else
 							break;
-						}
 					}
 				}
 			} catch (IOException e) {

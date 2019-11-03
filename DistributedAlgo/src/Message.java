@@ -60,7 +60,7 @@ public class Message implements Serializable {
 	
 	@Override
 	public int hashCode() {
-		return id;
+		return Objects.hash(id, m);
 	}
 	
 	@Override
@@ -69,7 +69,7 @@ public class Message implements Serializable {
 			return false;
 
 		Message msg2 = (Message) o;
-		return id == msg2.id;
+		return id.equals(msg2.getId());
 	}
 
 }

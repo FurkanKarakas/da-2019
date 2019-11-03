@@ -52,9 +52,9 @@ public class Da_proc {
             pi.setProcesses(processes);
             sc.close();
             
-            if (1 != n) {
-            	Message m = new Message("Hey process 1", pi.getPort(), InetAddress.getByName("127.0.0.1"), 1, false);
-                pi.sendMessage(m, InetAddress.getByName("127.0.0.1"), 12001);
+            if (1 == n) {
+            	BestEffortBroadcast beb = new BestEffortBroadcast(pi, 1);
+                beb.sendMessage();
             }
             
         }
