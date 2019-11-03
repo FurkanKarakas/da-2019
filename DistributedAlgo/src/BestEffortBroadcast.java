@@ -1,30 +1,29 @@
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-//import java.net.InetAddress;
-import java.util.ArrayList;
 
 public class BestEffortBroadcast {
 
-	private Process senderProcess;
-	private Message message;
-
-	public BestEffortBroadcast(Process senderProcess, Message message) {
-		this.senderProcess = senderProcess;
-		this.message = message;
+	private Integer id;
+	private Process p;
+	public BestEffortBroadcast(Process p, Integer id) {
+		this.p = p;
+		this.id = id;
 	}
 
 	public void sendMessage() throws IOException {
-		for (InetSocketAddress sa : senderProcess.getProcesses()) {
+		
+		for (InetSocketAddress sa : p.getProcesses()) {
 			InetAddress addr = sa.getAddress();
 			Integer port = sa.getPort();
-			PerfectLinks pl = new PerfectLinks(senderProcess, message, addr, port, 1);
-			pl.start();
+			Message m = new Message(sa.toString(), port, addr, id, false);
+			p.sendMessage(m, addr, port);
 		}
 			
 	}
 
 	public boolean deliverMessage(Message m) {
-		return this.senderProcess.isDelivered(m);
+		return true;
+		//return this.senderProcess.isDelivered(m);
 	}
 }

@@ -12,19 +12,22 @@ public class Message implements Serializable {
 	private String m;
 	private Integer id;
 	private boolean delivered;
-
-	public Message(String m, Integer port, InetAddress inetAddr) {
+	private boolean isAck;
+/*
+	public Message(String m, Integer port, InetAddress inetAddr, boolean isAck) {
 		this.m = m;
 		Message.counter += 1;
 		this.id = Message.counter;
 		this.delivered = false;
+		this.isAck = isAck;
 	}
-
-	public Message(String m, Integer port, InetAddress inetAddr, Integer id) {
+*/
+	public Message(String m, Integer port, InetAddress inetAddr, Integer id, boolean isAck) {
 		// For acknowledgments
 		this.m = m;
 		this.id = id;
 		this.delivered = false;
+		this.isAck = isAck;
 	}
 
 	public String getM() {
@@ -47,16 +50,26 @@ public class Message implements Serializable {
 		this.delivered = delivered;
 	}
 
-	public int hashCode() {
-		return Objects.hash(id, m, delivered);
+	public boolean isAck() {
+		return isAck;
 	}
 
+	public void setAck(boolean isAck) {
+		this.isAck = isAck;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, m);
+	}
+	
+	@Override
 	public boolean equals(Object o) {
 		if (o == null)
 			return false;
 
 		Message msg2 = (Message) o;
-		return id == msg2.id;
+		return id.equals(msg2.getId());
 	}
 
 }
