@@ -2,6 +2,7 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -21,6 +22,9 @@ public class Process extends Thread {
 	private Integer processId;
 	private DatagramSocket socket;
 	private ArrayList<InetSocketAddress> processes;
+	private FileOutputStream fos;
+	
+	static Integer msgID = 0;
 	/**
 	 * This is a thread-safe hashmap. In this data structure, we map a given Message
 	 * to a boolean value in order to store if the process has received the
@@ -35,8 +39,9 @@ public class Process extends Thread {
 	 * @param ip
 	 * @param processId
 	 * @param port
+	 * @throws IOException 
 	 */
-	public Process(InetAddress ip, Integer processId, Integer port) {
+	public Process(InetAddress ip, Integer processId, Integer port) throws IOException {
 		this.port = port;
 		this.processId = processId;
 		this.ip = ip;
@@ -46,6 +51,9 @@ public class Process extends Thread {
 			System.out.println("Failed to create a socket!");
 		}
 		new Listener().start();
+		
+		String fileName = "da_proc_" + this.processId.toString() + ".out";
+		this.fos = new FileOutputStream(fileName);
 
 		SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
 		SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
@@ -81,8 +89,17 @@ public class Process extends Thread {
 		public void handle(Signal signal) {
 
 			System.out.format("Handling signal: %s\n", signal.toString());
-			p.interrupt();
-			System.exit(0);
+			Process.msgID += 1;
+            FIFOBroadcast fifoBroadcast = new FIFOBroadcast(p, p.createMessagesList(true));
+            
+            try {
+				fifoBroadcast.sendMessage();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            return;
+			
 		}
 	}
 
@@ -97,6 +114,14 @@ public class Process extends Thread {
 		@Override
 		public void handle(Signal signal) {
 			System.out.format("Handling signal: %s\n", signal.toString());
+			
+			try {
+				p.getFos().flush();
+				p.getFos().close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			p.interrupt();
 			System.exit(0);
 		}
@@ -113,6 +138,13 @@ public class Process extends Thread {
 		@Override
 		public void handle(Signal signal) {
 			System.out.format("Handling signal: %s\n", signal.toString());
+			try {
+				p.getFos().flush();
+				p.getFos().close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			p.interrupt();
 			System.exit(0);
 		}
@@ -158,13 +190,24 @@ public class Process extends Thread {
 		this.processId = processId;
 	}
 
+	public FileOutputStream getFos() {
+		return fos;
+	}
+
+	public void setFos(FileOutputStream fos) {
+		this.fos = fos;
+	}
+	
+
+
 	public boolean isDelivered(Message msg) {
-		System.out.println(this.ackMsgs.size());
 		if (this.ackMsgs.get(msg).equals(null)) {
 			return false;
 		}
 		return this.ackMsgs.get(msg);
 	}
+	
+
 
 	public void setMsgStatus(Message msg, boolean status) {
 		this.ackMsgs.put(msg, status);
@@ -201,11 +244,11 @@ public class Process extends Thread {
 						if (!msg.isAck()) {
 							if (!msg.isBroadcast()) {
 								Message ack = new Message(msg.getM(), msg.getDestinationPort(),
-										msg.getDestinationInetAddr(), msg.getId(), true, false);
+										msg.getDestinationInetAddr(), msg.getId(), true, false, Process.this.getProcessId());
 								Process.this.sendMessage(ack, senderIp, senderPort);
 								System.out.println("Received message: " + msg.getM());
 							} else {
-								ArrayList<Message> messages = Process.this.createMessagesList(msg.getId(), false);
+								ArrayList<Message> messages = Process.this.createMessagesList(false);
 								// Process.this.sendMessage(ack, senderIp, senderPort);
 								// System.out.println("Received message: " + msg.getM());
 								BestEffortBroadcast beb = new BestEffortBroadcast(Process.this);
@@ -229,13 +272,17 @@ public class Process extends Thread {
 
 	}
 
-	public ArrayList<Message> createMessagesList(Integer id, boolean broadcast) {
+	public ArrayList<Message> createMessagesList(boolean broadcast) {
+		
+		
 		ArrayList<Message> messages = new ArrayList<Message>();
+		Integer payload = 1;
 		for (InetSocketAddress sa : this.processes) {
 			InetAddress addr = sa.getAddress();
 			Integer port = sa.getPort();
-			Message m = new Message(sa.toString(), port, addr, id, false, broadcast);
+			Message m = new Message(payload.toString(), port, addr, Process.msgID, false, broadcast, this.processId);
 			messages.add(m);
+			payload++;
 		}
 		return messages;
 	}
@@ -278,14 +325,17 @@ public class Process extends Thread {
 
 			try {
 				if (msg.isAck()) {
-					System.out.println("Send acknowledgement.");
 					piSocket.send(piPacket);
+					try {
+						TimeUnit.MILLISECONDS.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 
 				} else {
 					Process.this.ackMsgs.put(msg, false);
 					while (true) {
 						if (!Process.this.isDelivered(msg)) {
-							System.out.println(msg.getM());
 							piSocket.send(piPacket);
 							try {
 								TimeUnit.MILLISECONDS.sleep(1000);

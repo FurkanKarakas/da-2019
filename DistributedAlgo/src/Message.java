@@ -12,6 +12,7 @@ public class Message implements Serializable {
 	private Integer destinationPort;
 	private InetAddress destinationInetAddr;
 	private boolean broadcast;
+	private Integer sender;
 
 	/*
 	 * public Message(String m, Integer port, InetAddress inetAddr, boolean isAck) {
@@ -31,7 +32,7 @@ public class Message implements Serializable {
 	 *                            message or not.
 	 */
 	public Message(String m, Integer destinationPort, InetAddress destinationInetAddr, Integer id, boolean isAck,
-			boolean broadcast) {
+			boolean broadcast, Integer sender) {
 		// For acknowledgments
 		this.m = m;
 		this.id = id;
@@ -40,6 +41,7 @@ public class Message implements Serializable {
 		this.destinationInetAddr = destinationInetAddr;
 		this.destinationPort = destinationPort;
 		this.broadcast = broadcast;
+		this.sender = sender;
 	}
 
 	public String getM() {
@@ -92,6 +94,14 @@ public class Message implements Serializable {
 
 	public void setBroadcast(boolean broadcast) {
 		this.broadcast = broadcast;
+	}
+
+	public Integer getSender() {
+		return sender;
+	}
+
+	public void setSender(Integer sender) {
+		this.sender = sender;
 	}
 
 	@Override

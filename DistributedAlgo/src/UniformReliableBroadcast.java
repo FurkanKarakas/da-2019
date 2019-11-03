@@ -14,11 +14,11 @@ import java.util.logging.Logger;
  *
  * 
  */
-public class UniformReliabaleBroadcast {
+public class UniformReliableBroadcast {
     private Process p;
     private ArrayList<Message> messages;
 
-    public UniformReliabaleBroadcast(Process p, ArrayList<Message> messages) {
+    public UniformReliableBroadcast(Process p, ArrayList<Message> messages) {
         this.messages = messages;
         this.p = p;
     }
@@ -28,7 +28,7 @@ public class UniformReliabaleBroadcast {
         try {
             beb.sendMessage(this.messages);
         } catch (IOException ex) {
-            Logger.getLogger(UniformReliabaleBroadcast.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(UniformReliableBroadcast.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     public boolean canDeliver(){

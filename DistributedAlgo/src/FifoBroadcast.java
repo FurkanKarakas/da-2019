@@ -1,4 +1,5 @@
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 /*
@@ -11,38 +12,47 @@ import java.util.ArrayList;
  *
  * 
  */
-public class FifoBroadcast {
-    // private Process p;
+public class FIFOBroadcast {
+    private Process p;
     private ArrayList<Message> messages;
     private static ArrayList<Boolean> delivered = new ArrayList<Boolean>();
-    private UniformReliabaleBroadcast urb;
+    private UniformReliableBroadcast urb;
 
-    public FifoBroadcast(Process p, ArrayList<Message> messages) {
-        // this.p = p;
+    public FIFOBroadcast(Process p, ArrayList<Message> messages) {
+        this.p = p;
         this.messages = messages;
-        if (FifoBroadcast.delivered.size() < (messages.get(0).getId() - 1)) {
-            for (int i = FifoBroadcast.delivered.size(); i < messages.get(0).getId(); i++) {
-                FifoBroadcast.delivered.add(false);
+        if (FIFOBroadcast.delivered.size() < (messages.get(0).getId() - 1)) {
+            for (int i = FIFOBroadcast.delivered.size(); i < messages.get(0).getId(); i++) {
+                FIFOBroadcast.delivered.add(false);
             }
         }
-        if (FifoBroadcast.delivered.size() == (messages.get(0).getId() - 1)) {
-            FifoBroadcast.delivered.add(false);
+        if (FIFOBroadcast.delivered.size() == (messages.get(0).getId() - 1)) {
+            FIFOBroadcast.delivered.add(false);
         }
-        urb = new UniformReliabaleBroadcast(p, messages);
+        urb = new UniformReliableBroadcast(p, messages);
     }
 
-    public void sendMessage() {
+    public void sendMessage() throws IOException {
+    	String logBroadcast = "b " +  messages.get(0).getM() + "\n";
+    	this.p.getFos().write(logBroadcast.getBytes());
         this.urb.sendMessage();
     }
 
     public Boolean canDeliver(Integer id) {
         if (urb.canDeliver() & messages.get(0).getId() == 1) {
-            FifoBroadcast.delivered.set(0, Boolean.TRUE);
+			String logMsg = "d " + messages.get(0).getSender() + " " + messages.get(0).getM() + "\n";
+			try {
+				p.getFos().write(logMsg.getBytes());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            FIFOBroadcast.delivered.set(0, Boolean.TRUE);
         } else {
-            if (this.urb.canDeliver() & FifoBroadcast.delivered.get(messages.get(0).getId() - 2).equals(true)) {
-                FifoBroadcast.delivered.set(messages.get(0).getId() - 1, true);
+            if (this.urb.canDeliver() & FIFOBroadcast.delivered.get(messages.get(0).getId() - 2).equals(true)) {
+                FIFOBroadcast.delivered.set(messages.get(0).getId() - 1, true);
             }
         }
-        return FifoBroadcast.delivered.get(messages.get(0).getId() - 1);
+        return FIFOBroadcast.delivered.get(messages.get(0).getId() - 1);
     }
 }
