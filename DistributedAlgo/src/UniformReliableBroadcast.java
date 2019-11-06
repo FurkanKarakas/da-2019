@@ -16,33 +16,22 @@ import java.util.logging.Logger;
  */
 public class UniformReliableBroadcast {
     private Process p;
-    private ArrayList<Message> messages;
 
-    public UniformReliableBroadcast(Process p, ArrayList<Message> messages) {
-        this.messages = messages;
+    public UniformReliableBroadcast(Process p) {
         this.p = p;
     }
     
-    public void sendMessage(){
+    public void sendMessage(ArrayList<Message> messages){
         BestEffortBroadcast beb = new BestEffortBroadcast(p);
         try {
-            beb.sendMessage(this.messages);
+            beb.sendMessage(messages);
         } catch (IOException ex) {
             Logger.getLogger(UniformReliableBroadcast.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    public boolean canDeliver(){
-        Integer counter= 0;
-        for(Message m: this.messages){
-            
-            if(p.isDelivered(m)){
-                counter ++;
-            }
-        }
-        if(counter > this.messages.size()/2){
-            return true;
-        }
-        return false;
+
+    public boolean canDeliver(Message msg){
+        return p.msgCount(msg) > p.getProcesses().size()/2;
     }
-    
+
 }

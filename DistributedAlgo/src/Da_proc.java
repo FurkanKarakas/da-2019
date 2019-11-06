@@ -44,7 +44,10 @@ public class Da_proc {
                 InetSocketAddress sa = new InetSocketAddress(piAddr, port);
                 processes.add(sa);
                 if (Integer.parseInt(params[0]) == n) {
-                    pi = new Process(piAddr, n, port);
+                	Integer broadcastCount = 0;
+                	if (args[2] != null)
+                		broadcastCount = Integer.parseInt(args[2]);
+                    pi = new Process(piAddr, n, port, broadcastCount);
                 }
             }
 

@@ -62,9 +62,9 @@ fi
 for i in `seq 1 5`
 do
     if [ "$2" = "C" ]; then
-      ./da_proc $i membership 100 &
+      ./da_proc $i membership 3 &
     else
-      java Da_proc $i membership 100 &
+      java Da_proc $i membership 3 &
     fi
     da_proc_id[$i]=$!
 done

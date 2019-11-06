@@ -1,6 +1,7 @@
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -14,45 +15,33 @@ import java.util.ArrayList;
  */
 public class FIFOBroadcast {
     private Process p;
-    private ArrayList<Message> messages;
-    private static ArrayList<Boolean> delivered = new ArrayList<Boolean>();
+    
     private UniformReliableBroadcast urb;
 
-    public FIFOBroadcast(Process p, ArrayList<Message> messages) {
+    public FIFOBroadcast(Process p) {
         this.p = p;
-        this.messages = messages;
-        if (FIFOBroadcast.delivered.size() < (messages.get(0).getId() - 1)) {
-            for (int i = FIFOBroadcast.delivered.size(); i < messages.get(0).getId(); i++) {
-                FIFOBroadcast.delivered.add(false);
-            }
-        }
-        if (FIFOBroadcast.delivered.size() == (messages.get(0).getId() - 1)) {
-            FIFOBroadcast.delivered.add(false);
-        }
-        urb = new UniformReliableBroadcast(p, messages);
+        urb = new UniformReliableBroadcast(p);
     }
 
-    public void sendMessage() throws IOException {
-    	String logBroadcast = "b " +  messages.get(0).getM() + "\n";
-    	this.p.getFos().write(logBroadcast.getBytes());
-        this.urb.sendMessage();
+    public void sendMessage(ArrayList<Message> messages) throws IOException {
+        this.urb.sendMessage(messages);
     }
 
-    public Boolean canDeliver(Integer id) {
-        if (urb.canDeliver() & messages.get(0).getId() == 1) {
-			String logMsg = "d " + messages.get(0).getSender() + " " + messages.get(0).getM() + "\n";
-			try {
-				p.getFos().write(logMsg.getBytes());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-            FIFOBroadcast.delivered.set(0, Boolean.TRUE);
+    public Boolean canDeliver(Message message) {
+    	ArrayList<Boolean> delivered = new ArrayList<Boolean>();
+    	ArrayList<Message> messages = p.getSenderMsgs(message.getSender());
+    	Integer id = message.getId();
+    	for (int i = 0; i < id; i++) {
+            delivered.add(false);
+        }
+    	
+        if (urb.canDeliver(message) & id == 1) {
+            delivered.set(0, Boolean.TRUE);
         } else {
-            if (this.urb.canDeliver() & FIFOBroadcast.delivered.get(messages.get(0).getId() - 2).equals(true)) {
-                FIFOBroadcast.delivered.set(messages.get(0).getId() - 1, true);
+            if (this.urb.canDeliver(message) & delivered.get(id - 2).equals(true)) {
+                delivered.set(messages.get(0).getId() - 1, true);
             }
         }
-        return FIFOBroadcast.delivered.get(messages.get(0).getId() - 1);
+        return delivered.get(id - 1);
     }
 }
