@@ -19,9 +19,7 @@ public class BestEffortBroadcast {
 		 * Message(sa.toString(), port, addr, id, false); p.sendMessage(m, addr, port);
 		 * }
 		 */
-		Message m0 = messages.get(0);
-		if (m0 != null)
-			this.p.log("b " + m0.getId() + "\n");
+		
 		for (Message m : messages) {
 			p.sendMessage(m, m.getDestinationInetAddr(), m.getDestinationPort());
 		}

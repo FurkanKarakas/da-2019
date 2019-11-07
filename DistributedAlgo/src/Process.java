@@ -14,6 +14,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -25,9 +26,9 @@ public class Process extends Thread {
 	private ArrayList<InetSocketAddress> processes;
 	private FileOutputStream fos;
 	private Integer bcCount;
-	private CopyOnWriteArrayList<Message> received;
+	private volatile CopyOnWriteArrayList<Message> received;
 	private String logMsg = "";
-	
+	private volatile ConcurrentHashMap<Integer, ArrayList<Boolean>> fifoDelivred = new ConcurrentHashMap<Integer, ArrayList<Boolean>>();
 	static Integer msgID = 0;
 	/**
 	 * This is a thread-safe hashmap. In this data structure, we map a given Message
@@ -81,6 +82,11 @@ public class Process extends Thread {
 
 	public void setProcesses(ArrayList<InetSocketAddress> processes) {
 		this.processes = processes;
+                int i=0;
+                for(InetSocketAddress process : processes){
+                    this.fifoDelivred.put(i, new ArrayList<Boolean>());
+                    i++;
+                }
 	}
 
 	public static class SigHandlerUsr2 implements SignalHandler {
@@ -288,7 +294,22 @@ public class Process extends Thread {
 	public ConcurrentHashMap<Message, Boolean> getAckMsgs() {
 		return ackMsgs;
 	}
-
+        public void setFifoDelivred(Integer sender, Integer id, Boolean value){
+            ArrayList<Boolean> delivered = this.fifoDelivred.get(sender-1);
+            if (delivered.size() < (id - 1)) {
+                for (int i = delivered.size(); i < id; i++) {
+                    delivered.add(false);
+                }
+            }
+            if (delivered.size() == (id - 1)) {
+                System.out.println("Added");
+                delivered.add(value);
+            }
+            this.fifoDelivred.put(sender, delivered);
+        }
+        public ArrayList<Boolean> getFifoDelivred(Integer sender){
+            return this.fifoDelivred.get(sender-1);
+        }
 	/**
 	 * This is a subclass of the class Process, and it extends Thread. It is
 	 * responsible for listening to the incoming messages.
@@ -328,11 +349,43 @@ public class Process extends Thread {
 							Process.this.sendMessage(ack, senderIp, senderPort);							
 						} else {
 							Process.this.received.add(msg);
-							
-							if (fifoBC.canDeliver(msg)) {
+//                                                        ArrayList<Boolean> delivred = Process.this.fifoDelivred.get(msg.getSender()-1);
+//                                                        System.out.println(Process.this.fifoDelivred.get(1).isEmpty());
+//                                                        if(!Process.this.fifoDelivred.get(msg.getSender()-1).isEmpty()){
+//                                                            if(!Process.this.fifoDelivred.get(msg.getSender()-1).get(msg.getId()-1)){
+//                                                            if (fifoBC.canDeliver(msg, delivred)) {
+//								System.out.println("Logging deliver");
+//								Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
+//                                                            }
+//                                                        }else{
+//                                                              if (fifoBC.canDeliver(msg, delivred)) {
+//								System.out.println("Logging deliver");
+//								Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
+//                                                            }  
+//                                                            }
+//                                                        }
+                                                        if(Process.this.fifoDelivred.get(msg.getSender()-1).isEmpty()){
+                                                            if (fifoBC.canDeliver(msg)) {
 								System.out.println("Logging deliver");
 								Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-							}
+                                                            }
+                                                        }else{
+                                                            if(Process.this.fifoDelivred.get(msg.getSender()-1).size() < msg.getId()){
+                                                                if (fifoBC.canDeliver(msg)) {
+                                                                    System.out.println("Logging deliver");
+                                                                    Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
+                                                                }
+                                                                }else{
+                                                                    if(!Process.this.fifoDelivred.get(msg.getSender()-1).get(msg.getId()-1)){
+                                                                        if (fifoBC.canDeliver(msg)) {
+                                                                            System.out.println("Logging deliver");
+                                                                            Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
+                                                                        }
+                                                                    }
+                                                                }
+                                                        }
+                                                        
+							
 							
 							Process.this.ackMsgs.put(msg, true);
 						}
