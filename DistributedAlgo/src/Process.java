@@ -300,12 +300,13 @@ public class Process extends Thread {
                 for (int i = delivered.size(); i < id; i++) {
                     delivered.add(false);
                 }
-            }
-            if (delivered.size() == (id - 1)) {
-                System.out.println("Added");
+            }else if (delivered.size() == (id - 1)) {
+                //System.out.println("Added");
                 delivered.add(value);
+            }else{
+                delivered.set(id-1,value);
             }
-            this.fifoDelivred.put(sender, delivered);
+            this.fifoDelivred.put(sender-1, delivered);
         }
         public ArrayList<Boolean> getFifoDelivred(Integer sender){
             return this.fifoDelivred.get(sender-1);

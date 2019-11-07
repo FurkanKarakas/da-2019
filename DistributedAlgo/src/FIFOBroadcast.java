@@ -35,16 +35,18 @@ public class FIFOBroadcast {
         ArrayList<Boolean> delivered= p.getFifoDelivred(message.getSender());
     	ArrayList<Message> messages = p.getSenderMsgs(message.getSender());
     	Integer id = message.getId();
-        System.out.println(id);
         p.setFifoDelivred(message.getSender(), id, Boolean.FALSE);
         if (urb.canDeliver(message) & id == 1) {
             //delivered.set(0, Boolean.TRUE);
+            
             p.setFifoDelivred(message.getSender(), id, Boolean.TRUE);
         } else if(id > 1){
-            if (this.urb.canDeliver(message) & delivered.get(id - 2).equals(true)) {
+            if (this.urb.canDeliver(message) & p.getFifoDelivred(message.getSender()).get(id - 2).equals(true)) {
                 p.setFifoDelivred(message.getSender(), id, Boolean.TRUE);
             }
         }
-        return p.getFifoDelivred(message.getSender()).get(id - 1);
+        boolean bool= p.getFifoDelivred(message.getSender()).get(id - 1);
+        System.out.println(bool);
+        return bool;
     }
 }
