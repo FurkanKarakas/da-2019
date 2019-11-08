@@ -1,19 +1,7 @@
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
-/**
- *
- * 
- */
 public class UniformReliableBroadcast {
     private Process p;
 
@@ -26,12 +14,13 @@ public class UniformReliableBroadcast {
         try {
             beb.sendMessage(messages);
         } catch (IOException ex) {
-            Logger.getLogger(UniformReliableBroadcast.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Unable to send messages in Uniform Reliable Broadcast.");
         }
     }
 
     public boolean canDeliver(Message msg){
-        return p.msgCount(msg) > p.getProcesses().size()/2;
+    	// Deliver if half of the messages have been acknowledged by process p
+        return p.msgAckCount(msg) > p.getProcesses().size()/2;
     }
 
 }
