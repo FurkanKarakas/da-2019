@@ -43,7 +43,7 @@ public class Process extends Thread {
 
 	/**
 	 * Process constructor
-	 * 
+	 *
 	 * @param ip             - Socket IP address of the process
 	 * @param port           - Socket port number of the process
 	 * @param processId      - Process ID that is given in membership file
@@ -190,7 +190,7 @@ public class Process extends Thread {
 
 				// Wait some milliseconds between broadcasts
 				try {
-					TimeUnit.MILLISECONDS.sleep(20);
+					TimeUnit.MILLISECONDS.sleep(30);
 				} catch (InterruptedException e) {
 					System.out.println("Timeout interrupted.");
 				}
@@ -204,7 +204,7 @@ public class Process extends Thread {
 	/**
 	 * This method creates a new instance of the Sender class, and it makes this
 	 * thread start sending message m.
-	 * 
+	 *
 	 * @param m - Message to be sent
 	 */
 	public void sendMessage(Message m) {
@@ -260,7 +260,7 @@ public class Process extends Thread {
 
 						if (!msg.isAck()) {
 							// Broadcast the message if needed
-							if (msg.isBroadcast() && msg.getSender() != getProcessId()) {
+							if (msg.isBroadcast() && msg.getSender()!=getProcessId()) {
 								ArrayList<Message> messages = Process.this.createMessagesList(msg);
 								BestEffortBroadcast beb = new BestEffortBroadcast(Process.this);
 								beb.sendMessage(messages);
@@ -340,7 +340,7 @@ public class Process extends Thread {
 					piSocket.send(piPacket);
 				} else {
 					// Sleep first 50ms and increase until 500
-					Integer sleepMS = 50;
+					Integer sleepMS = 150;
 
 					// Keep sending until we receive acknowledgment
 					threadIds.put(threadID, false);
@@ -354,7 +354,7 @@ public class Process extends Thread {
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
-						sleepMS = Math.min(sleepMS * 3, 500);
+						sleepMS = Math.min(sleepMS * 2, 1000);
 					}
 
 					// Stop thread
@@ -368,7 +368,7 @@ public class Process extends Thread {
 
 	/**
 	 * Create messages to be broadcast by sender.
-	 * 
+	 *
 	 * @param broadcast - Broadcast or not.
 	 * @param sender    - Sender ID that broadcasts the messages.
 	 * @return Initial broadcast messages.
@@ -388,7 +388,7 @@ public class Process extends Thread {
 
 	/**
 	 * Relay messages to be sent
-	 * 
+	 *
 	 * @param m - Message that should be relayed.
 	 * @return Relay messages.
 	 */
