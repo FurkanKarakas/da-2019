@@ -26,16 +26,18 @@ public class Process extends Thread {
 	private ArrayList<InetSocketAddress> processes;
 	private FileOutputStream fos;
 	private Integer bcCount;
-	private volatile CopyOnWriteArrayList<Message> received;
+	
 	private String logMsg = "";
-	private volatile ConcurrentHashMap<Integer, ArrayList<Boolean>> fifoDelivred = new ConcurrentHashMap<Integer, ArrayList<Boolean>>();
+	private volatile ConcurrentHashMap<Integer, CanDeliver> fifoDelivred = new ConcurrentHashMap<Integer, CanDeliver>();
+	private volatile CopyOnWriteArrayList<Message> ackMsgs = new CopyOnWriteArrayList<Message>();
+	private volatile CopyOnWriteArrayList<Message> received = new CopyOnWriteArrayList<Message>();
+	private Listener pListener;
 	static Integer msgID = 0;
 	/**
 	 * This is a thread-safe hashmap. In this data structure, we map a given Message
 	 * to a boolean value in order to store if the process has received the
 	 * acknowledgement yet.
 	 */
-	private volatile ConcurrentHashMap<Message, Boolean> ackMsgs = new ConcurrentHashMap<Message, Boolean>();
 
 	/**
 	 * In the constructor of the process, we start listening to the incoming
@@ -46,6 +48,40 @@ public class Process extends Thread {
 	 * @param port
 	 * @throws IOException 
 	 */
+	
+	public class CanDeliver {
+		private ConcurrentHashMap<Integer, Boolean> canDeliverId = new ConcurrentHashMap<Integer, Boolean>();
+		private ConcurrentHashMap<Integer, Boolean> isLogged = new ConcurrentHashMap<Integer, Boolean>();
+
+		public ConcurrentHashMap<Integer, Boolean> getCanDeliverId() {
+			return canDeliverId;
+		}
+
+		public void setCanDeliverId(ConcurrentHashMap<Integer, Boolean> canDeliverId) {
+			this.canDeliverId = canDeliverId;
+		}
+		
+		public void log(Integer isLog) {
+			isLogged.put(isLog, true);
+		}
+		
+		public boolean isLogged(Integer isLog) {
+			if (isLogged.get(isLog) == null)
+				return false;
+			return true;
+		}
+		
+		public void addDeliver(Integer id, Boolean isDeliverable) {
+			canDeliverId.put(id, isDeliverable);
+		}
+		
+		public boolean canDeliver(Integer id) {
+			if (canDeliverId.get(id) == null)
+				return false;
+			return canDeliverId.get(id);
+		}
+	}
+
 	public Process(InetAddress ip, Integer processId, Integer port, Integer bcCount) throws IOException {
 		this.port = port;
 		this.processId = processId;
@@ -56,7 +92,8 @@ public class Process extends Thread {
 		} catch (SocketException e) {
 			System.out.println("Failed to create a socket!");
 		}
-		new Listener().start();
+		pListener = new Listener();
+		pListener.start();
 		
 		String fileName = "da_proc_" + this.processId.toString() + ".out";
 		this.fos = new FileOutputStream(fileName);
@@ -82,9 +119,9 @@ public class Process extends Thread {
 
 	public void setProcesses(ArrayList<InetSocketAddress> processes) {
 		this.processes = processes;
-                int i=0;
+                int i=1;
                 for(InetSocketAddress process : processes){
-                    this.fifoDelivred.put(i, new ArrayList<Boolean>());
+                    this.fifoDelivred.put(i, new CanDeliver());
                     i++;
                 }
 	}
@@ -137,7 +174,7 @@ public class Process extends Thread {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-
+			
 			try {
 				p.getFos().flush();
 				p.getFos().close();
@@ -192,7 +229,204 @@ public class Process extends Thread {
 	public void sendMessage(Message m, InetAddress destIP, int destPort) {
 		new Sender(m, destIP, destPort).start();
 	}
+	/*
+	public boolean isDelivered(Message msg) {
+		if (this.ackMsgs.get(msg).equals(null)) {
+			return false;
+		}
+		return this.ackMsgs.get(msg);
+	}
+	*/
+	public boolean isDeliveredBeb(Message msg) {
+		return this.received.contains(msg);
+	}
 	
+	public Integer msgCount(Message m) {
+		Integer count = 0;
+		ArrayList<Integer> senderIds = new ArrayList<Integer>();
+		for (Message mAck : ackMsgs) {
+			if (mAck.equals(m) && !senderIds.contains(mAck.getAckSender())) {
+				count++;
+				senderIds.add(mAck.getAckSender());
+				//System.out.println("mAck is: " + senderIds);
+			}
+		}
+		
+		return count;
+	}
+
+	public CopyOnWriteArrayList<Message> getAckMsgs() {
+		return ackMsgs;
+	}
+
+	public boolean isAck(Message msg) {
+
+		return this.ackMsgs.contains(msg);
+	}
+
+    public void setFifoDelivred(Integer sender, Integer id, Boolean value){
+    	CanDeliver delivered = this.fifoDelivred.get(sender);
+        delivered.addDeliver(id, value);
+        this.fifoDelivred = new ConcurrentHashMap<Integer, CanDeliver>(this.fifoDelivred);
+    }
+
+    public CanDeliver getFifoDelivred(Integer sender){
+        return this.fifoDelivred.get(sender);
+    }
+	/**
+	 * This is a subclass of the class Process, and it extends Thread. It is
+	 * responsible for listening to the incoming messages.
+	 */
+	public class Listener extends Thread {
+
+		@Override
+		public void run() {
+			System.out.println("Start listener.");
+			DatagramSocket socket = Process.this.getSocket();
+			byte[] receive = new byte[65535];
+			DatagramPacket dpReceive = null;
+			FIFOBroadcast fifoBC = new FIFOBroadcast(Process.this);
+			while (true) {
+				dpReceive = new DatagramPacket(receive, receive.length);
+				try {
+					socket.receive(dpReceive);
+					byte[] msgBytes = dpReceive.getData();
+					Integer senderPort = dpReceive.getPort();
+					InetAddress senderIp = dpReceive.getAddress();
+
+					ByteArrayInputStream bis = new ByteArrayInputStream(msgBytes);
+					ObjectInputStream ois = new ObjectInputStream(bis);
+					try {
+						Message msg = (Message) ois.readObject();
+						if (!msg.isAck()) {
+							if (msg.isBroadcast() && Process.this.msgCount(msg) == 0) {
+								ArrayList<Message> messages = Process.this.createMessagesList(msg);
+								// Process.this.sendMessage(ack, senderIp, senderPort);
+								// System.out.println("Received message: " + msg.getM());
+								BestEffortBroadcast beb = new BestEffortBroadcast(Process.this);
+								beb.sendMessage(messages);
+								//System.out.println("Received message: " + msg.getM());
+							}
+							Message ack = new Message(msg.getM(), senderPort,
+									senderIp, msg.getId(), true, false, msg.getSender(), Process.this.getProcessId());
+							Process.this.sendMessage(ack, senderIp, senderPort);
+							Process.this.received.add(msg);
+						} else {
+							Process.this.ackMsgs.add(msg);
+							CanDeliver canDel = Process.this.fifoDelivred.get(msg.getSender());
+							if (canDel != null) {
+								if (!canDel.isLogged(msg.getId()) && fifoBC.canDeliver(msg)) {
+									Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
+									//System.out.println("Logging");
+									canDel.log(msg.getId());
+								}
+							}         
+							
+						}
+					} catch (ClassNotFoundException e) {
+						e.printStackTrace();
+					}
+				} catch (SocketTimeoutException e) {
+					// System.out.println("Timeout reached.");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+			}
+		}
+
+	}
+
+	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender) {
+		ArrayList<Message> messages = new ArrayList<Message>();
+		
+		for (InetSocketAddress sa : this.processes) {
+			InetAddress addr = sa.getAddress();
+			Integer port = sa.getPort();
+			Message m = new Message(Process.msgID.toString(), port, addr, Process.msgID, false, broadcast, sender, null);
+			messages.add(m);
+		}
+		
+		return messages;
+	}
+	
+	public ArrayList<Message> createMessagesList(Message m) {
+		ArrayList<Message> messages = new ArrayList<Message>();
+
+		for (InetSocketAddress sa : this.processes) {
+			InetAddress addr = sa.getAddress();
+			Integer port = sa.getPort();
+			Message mRelay = new Message(m.getM(), port, addr, m.getId(), false, false, m.getSender(), null);
+			messages.add(mRelay);
+		}
+		
+		return messages;
+	}
+
+	/**
+	 * This class is a subclass of the class Process, and it is responsible for
+	 * sending messages concurrently.
+	 */
+	public class Sender extends Thread {
+
+		private Message msg;
+		private InetAddress destIP;
+		private Integer destPort;
+
+		public Sender(Message m, InetAddress destIP, int destPort) {
+			this.msg = m;
+			this.destIP = destIP;
+			this.destPort = destPort;
+		}
+
+		@Override
+		public void run() {
+			Integer port = destPort;
+			InetAddress ip = destIP;
+
+			final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
+			ObjectOutputStream dataOut;
+			try {
+				dataOut = new ObjectOutputStream(objectOut);
+				dataOut.writeObject(msg);
+				dataOut.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			DatagramSocket piSocket = Process.this.getSocket();
+			final byte[] data = objectOut.toByteArray();
+
+			DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
+
+			try {
+				if (msg.isAck()) {
+					piSocket.send(piPacket);
+					try {
+						TimeUnit.MILLISECONDS.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+
+				} else {
+					while (true) {
+						//if (!Process.this.isAck(msg)) {
+							piSocket.send(piPacket);
+							try {
+								TimeUnit.MILLISECONDS.sleep(1000);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						//} else
+							//break;
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
 	public void log(String l) {
 		this.logMsg = this.logMsg + l;
 	}
@@ -257,242 +491,5 @@ public class Process extends Thread {
 		this.received = received;
 	}
 
-	public boolean isDelivered(Message msg) {
-		if (this.ackMsgs.get(msg).equals(null)) {
-			return false;
-		}
-		return this.ackMsgs.get(msg);
-	}
 	
-	public boolean isDeliveredBeb(Message msg) {
-		return this.received.contains(msg);
-	}
-	
-	public Integer msgCount(Message m) {
-		Integer count = 0;
-		for (Message mR : received) {
-			if (mR.getSender().equals(m.getSender()) && mR.getId().equals(m.getId())) {
-				count++;
-			}
-		}
-		return count;
-	}
-	
-    public ArrayList<Message> getSenderMsgs(Integer sender) {
-    	ArrayList<Message> senderMsgs = new ArrayList<Message>();
-    	for (Message m : received) {
-    		if (m.getSender().equals(sender))
-    			received.add(m);
-    	}
-    	return senderMsgs;
-    }
-
-	public void setMsgStatus(Message msg, boolean status) {
-		this.ackMsgs.put(msg, status);
-	}
-
-	public ConcurrentHashMap<Message, Boolean> getAckMsgs() {
-		return ackMsgs;
-	}
-        public void setFifoDelivred(Integer sender, Integer id, Boolean value){
-            ArrayList<Boolean> delivered = this.fifoDelivred.get(sender-1);
-            if (delivered.size() < (id - 1)) {
-                for (int i = delivered.size(); i < id; i++) {
-                    delivered.add(false);
-                }
-            }else if (delivered.size() == (id - 1)) {
-                //System.out.println("Added");
-                delivered.add(value);
-            }else{
-                delivered.set(id-1,value);
-            }
-            this.fifoDelivred.put(sender-1, delivered);
-        }
-        public ArrayList<Boolean> getFifoDelivred(Integer sender){
-            return this.fifoDelivred.get(sender-1);
-        }
-	/**
-	 * This is a subclass of the class Process, and it extends Thread. It is
-	 * responsible for listening to the incoming messages.
-	 */
-	public class Listener extends Thread {
-
-		@Override
-		public void run() {
-			System.out.println("Start listener.");
-			DatagramSocket socket = Process.this.getSocket();
-			byte[] receive = new byte[65535];
-			DatagramPacket dpReceive = null;
-			FIFOBroadcast fifoBC = new FIFOBroadcast(Process.this);
-			while (true) {
-				dpReceive = new DatagramPacket(receive, receive.length);
-				try {
-					socket.receive(dpReceive);
-					byte[] msgBytes = dpReceive.getData();
-					Integer senderPort = dpReceive.getPort();
-					InetAddress senderIp = dpReceive.getAddress();
-
-					ByteArrayInputStream bis = new ByteArrayInputStream(msgBytes);
-					ObjectInputStream ois = new ObjectInputStream(bis);
-					try {
-						Message msg = (Message) ois.readObject();
-						if (!msg.isAck()) {
-							if (msg.isBroadcast() && Process.this.msgCount(msg) == 0) {
-								ArrayList<Message> messages = Process.this.createMessagesList(msg);
-								// Process.this.sendMessage(ack, senderIp, senderPort);
-								// System.out.println("Received message: " + msg.getM());
-								BestEffortBroadcast beb = new BestEffortBroadcast(Process.this);
-								beb.sendMessage(messages);
-								System.out.println("Received message: " + msg.getM());
-							}
-							Message ack = new Message(msg.getM(), msg.getDestinationPort(),
-									msg.getDestinationInetAddr(), msg.getId(), true, false, Process.this.getProcessId());
-							Process.this.sendMessage(ack, senderIp, senderPort);							
-						} else {
-							Process.this.received.add(msg);
-//                                                        ArrayList<Boolean> delivred = Process.this.fifoDelivred.get(msg.getSender()-1);
-//                                                        System.out.println(Process.this.fifoDelivred.get(1).isEmpty());
-//                                                        if(!Process.this.fifoDelivred.get(msg.getSender()-1).isEmpty()){
-//                                                            if(!Process.this.fifoDelivred.get(msg.getSender()-1).get(msg.getId()-1)){
-//                                                            if (fifoBC.canDeliver(msg, delivred)) {
-//								System.out.println("Logging deliver");
-//								Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-//                                                            }
-//                                                        }else{
-//                                                              if (fifoBC.canDeliver(msg, delivred)) {
-//								System.out.println("Logging deliver");
-//								Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-//                                                            }  
-//                                                            }
-//                                                        }
-                                                        if(Process.this.fifoDelivred.get(msg.getSender()-1).isEmpty()){
-                                                            if (fifoBC.canDeliver(msg)) {
-								System.out.println("Logging deliver");
-								Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-                                                            }
-                                                        }else{
-                                                            if(Process.this.fifoDelivred.get(msg.getSender()-1).size() < msg.getId()){
-                                                                if (fifoBC.canDeliver(msg)) {
-                                                                    System.out.println("Logging deliver");
-                                                                    Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-                                                                }
-                                                                }else{
-                                                                    if(!Process.this.fifoDelivred.get(msg.getSender()-1).get(msg.getId()-1)){
-                                                                        if (fifoBC.canDeliver(msg)) {
-                                                                            System.out.println("Logging deliver");
-                                                                            Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-                                                                        }
-                                                                    }
-                                                                }
-                                                        }
-                                                        
-							
-							
-							Process.this.ackMsgs.put(msg, true);
-						}
-					} catch (ClassNotFoundException e) {
-						e.printStackTrace();
-					}
-				} catch (SocketTimeoutException e) {
-					// System.out.println("Timeout reached.");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-
-			}
-		}
-
-	}
-
-	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender) {
-		ArrayList<Message> messages = new ArrayList<Message>();
-		
-		for (InetSocketAddress sa : this.processes) {
-			InetAddress addr = sa.getAddress();
-			Integer port = sa.getPort();
-			Message m = new Message(Process.msgID.toString(), port, addr, Process.msgID, false, broadcast, sender);
-			messages.add(m);
-		}
-		
-		return messages;
-	}
-	
-	public ArrayList<Message> createMessagesList(Message m) {
-		ArrayList<Message> messages = new ArrayList<Message>();
-
-		for (InetSocketAddress sa : this.processes) {
-			InetAddress addr = sa.getAddress();
-			Integer port = sa.getPort();
-			Message mRelay = new Message(m.getM(), port, addr, m.getId(), false, false, m.getSender());
-			messages.add(mRelay);
-		}
-		
-		return messages;
-	}
-
-	/**
-	 * This class is a subclass of the class Process, and it is responsible for
-	 * sending messages concurrently.
-	 */
-	public class Sender extends Thread {
-
-		private Message msg;
-		private InetAddress destIP;
-		private Integer destPort;
-
-		public Sender(Message m, InetAddress destIP, int destPort) {
-			this.msg = m;
-			this.destIP = destIP;
-			this.destPort = destPort;
-		}
-
-		@Override
-		public void run() {
-			Integer port = destPort;
-			InetAddress ip = destIP;
-
-			final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
-			ObjectOutputStream dataOut;
-			try {
-				dataOut = new ObjectOutputStream(objectOut);
-				dataOut.writeObject(msg);
-				dataOut.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-
-			DatagramSocket piSocket = Process.this.getSocket();
-			final byte[] data = objectOut.toByteArray();
-
-			DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
-
-			try {
-				if (msg.isAck()) {
-					piSocket.send(piPacket);
-					try {
-						TimeUnit.MILLISECONDS.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-
-				} else {
-					Process.this.ackMsgs.put(msg, false);
-					while (true) {
-						if (!Process.this.isDelivered(msg)) {
-							piSocket.send(piPacket);
-							try {
-								TimeUnit.MILLISECONDS.sleep(1000);
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-							}
-						} else
-							break;
-					}
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
 }

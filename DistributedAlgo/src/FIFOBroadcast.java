@@ -32,21 +32,20 @@ public class FIFOBroadcast {
     }
 
     public Boolean canDeliver(Message message) {
-        ArrayList<Boolean> delivered= p.getFifoDelivred(message.getSender());
-    	ArrayList<Message> messages = p.getSenderMsgs(message.getSender());
+        Process.CanDeliver delivered= p.getFifoDelivred(message.getSender());
     	Integer id = message.getId();
-        p.setFifoDelivred(message.getSender(), id, Boolean.FALSE);
+  
         if (urb.canDeliver(message) & id == 1) {
             //delivered.set(0, Boolean.TRUE);
-            
-            p.setFifoDelivred(message.getSender(), id, Boolean.TRUE);
+            delivered.addDeliver(id, true);
         } else if(id > 1){
-            if (this.urb.canDeliver(message) & p.getFifoDelivred(message.getSender()).get(id - 2).equals(true)) {
-                p.setFifoDelivred(message.getSender(), id, Boolean.TRUE);
+
+            if (this.urb.canDeliver(message) & delivered.canDeliver(id-1)) {
+            	//System.out.println("Can deliver: " + id);
+            	delivered.addDeliver(id, true);
             }
         }
-        boolean bool= p.getFifoDelivred(message.getSender()).get(id - 1);
-        System.out.println(bool);
-        return bool;
+
+        return delivered.canDeliver(id);
     }
 }

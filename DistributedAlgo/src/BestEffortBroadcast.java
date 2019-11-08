@@ -27,6 +27,6 @@ public class BestEffortBroadcast {
 	}
 
 	public boolean deliverMessage(Message msg) {
-		return p.isDelivered(msg);
+		return p.isDeliveredBeb(msg);
 	}
 }

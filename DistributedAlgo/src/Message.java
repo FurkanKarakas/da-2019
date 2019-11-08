@@ -13,6 +13,7 @@ public class Message implements Serializable {
 	private InetAddress destinationInetAddr;
 	private boolean broadcast;
 	private Integer sender;
+	private Integer ackSender;
 
 	/*
 	 * public Message(String m, Integer port, InetAddress inetAddr, boolean isAck) {
@@ -32,7 +33,7 @@ public class Message implements Serializable {
 	 *                            message or not.
 	 */
 	public Message(String m, Integer destinationPort, InetAddress destinationInetAddr, Integer id, boolean isAck,
-			boolean broadcast, Integer sender) {
+			boolean broadcast, Integer sender, Integer ackSender) {
 		// For acknowledgments
 		this.m = m;
 		this.id = id;
@@ -42,6 +43,7 @@ public class Message implements Serializable {
 		this.destinationPort = destinationPort;
 		this.broadcast = broadcast;
 		this.sender = sender;
+		this.ackSender = ackSender;
 	}
 
 	public String getM() {
@@ -103,6 +105,16 @@ public class Message implements Serializable {
 	public void setSender(Integer sender) {
 		this.sender = sender;
 	}
+	
+	
+
+	public Integer getAckSender() {
+		return ackSender;
+	}
+
+	public void setAckSender(Integer ackSender) {
+		this.ackSender = ackSender;
+	}
 
 	@Override
 	public int hashCode() {
@@ -117,7 +129,7 @@ public class Message implements Serializable {
 		Message msg2 = (Message) o;
 		// return(id.equals(msg2.getId()));
 		return (this.destinationPort.equals(msg2.getDestinationPort()) & id.equals(msg2.getId())
-				& this.destinationInetAddr.equals(msg2.getDestinationInetAddr()));
+				& this.destinationInetAddr.equals(msg2.getDestinationInetAddr()) && sender.equals(msg2.sender));
 	}
 
 }
