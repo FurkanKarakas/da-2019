@@ -3,7 +3,7 @@ import java.net.InetAddress;
 import java.util.Objects;
 
 public class Message implements Serializable {
-	private static final long serialVersionUID = 1423627893178345L;
+	private static final Long serialVersionUID = 1423627893178345L;
 	public static Integer counter = 0;
 	private String m;
 	private Integer id;
@@ -11,10 +11,14 @@ public class Message implements Serializable {
 	private boolean isAck;
 	private Integer destinationPort;
 	private InetAddress destinationInetAddr;
+	private Integer sourcePort;
+	private InetAddress sourceInetAddr;
 	private boolean broadcast;
 	private Integer sender;
 	private Integer ackSender;
+	private Long threadId;
 
+	
 	/*
 	 * public Message(String m, Integer port, InetAddress inetAddr, boolean isAck) {
 	 * this.m = m; Message.counter += 1; this.id = Message.counter; this.delivered =
@@ -32,7 +36,7 @@ public class Message implements Serializable {
 	 * @param broadcast           specifies whether the given message is a broadcast
 	 *                            message or not.
 	 */
-	public Message(String m, Integer destinationPort, InetAddress destinationInetAddr, Integer id, boolean isAck,
+	public Message(String m, Integer destinationPort, InetAddress destinationInetAddr, Integer sourcePort, InetAddress sourceInetAddr, Integer id, boolean isAck,
 			boolean broadcast, Integer sender, Integer ackSender) {
 		// For acknowledgments
 		this.m = m;
@@ -41,6 +45,8 @@ public class Message implements Serializable {
 		this.isAck = isAck;
 		this.destinationInetAddr = destinationInetAddr;
 		this.destinationPort = destinationPort;
+		this.sourcePort = sourcePort;
+		this.sourceInetAddr = sourceInetAddr;
 		this.broadcast = broadcast;
 		this.sender = sender;
 		this.ackSender = ackSender;
@@ -56,6 +62,22 @@ public class Message implements Serializable {
 
 	public Integer getId() {
 		return id;
+	}
+
+	public Integer getSourcePort() {
+		return sourcePort;
+	}
+
+	public void setSourcePort(Integer sourcePort) {
+		this.sourcePort = sourcePort;
+	}
+
+	public InetAddress getSourceInetAddr() {
+		return sourceInetAddr;
+	}
+
+	public void setSourceInetAddr(InetAddress sourceInetAddr) {
+		this.sourceInetAddr = sourceInetAddr;
 	}
 
 	public boolean isDelivered() {
@@ -106,7 +128,13 @@ public class Message implements Serializable {
 		this.sender = sender;
 	}
 	
-	
+	public Long getThreadId() {
+		return threadId;
+	}
+
+	public void setThreadId(Long threadId) {
+		this.threadId = threadId;
+	}
 
 	public Integer getAckSender() {
 		return ackSender;
@@ -128,8 +156,8 @@ public class Message implements Serializable {
 
 		Message msg2 = (Message) o;
 		// return(id.equals(msg2.getId()));
-		return (this.destinationPort.equals(msg2.getDestinationPort()) & id.equals(msg2.getId())
-				& this.destinationInetAddr.equals(msg2.getDestinationInetAddr()) && sender.equals(msg2.sender));
+		return (id.equals(msg2.getId())
+				 && sender.equals(msg2.sender));
 	}
 
 }

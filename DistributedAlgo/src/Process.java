@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Process extends Thread {
 	private InetAddress ip;
@@ -28,11 +29,12 @@ public class Process extends Thread {
 	private Integer bcCount;
 	
 	private String logMsg = "";
-	private volatile ConcurrentHashMap<Integer, CanDeliver> fifoDelivred = new ConcurrentHashMap<Integer, CanDeliver>();
 	private volatile CopyOnWriteArrayList<Message> ackMsgs = new CopyOnWriteArrayList<Message>();
-	private volatile CopyOnWriteArrayList<Message> received = new CopyOnWriteArrayList<Message>();
+	private volatile ConcurrentHashMap<Long, Boolean> threadIds = new ConcurrentHashMap<Long, Boolean>();
+	private FIFOBroadcast fifoBC;
 	private Listener pListener;
 	static Integer msgID = 0;
+	
 	/**
 	 * This is a thread-safe hashmap. In this data structure, we map a given Message
 	 * to a boolean value in order to store if the process has received the
@@ -49,43 +51,13 @@ public class Process extends Thread {
 	 * @throws IOException 
 	 */
 	
-	public class CanDeliver {
-		private ConcurrentHashMap<Integer, Boolean> canDeliverId = new ConcurrentHashMap<Integer, Boolean>();
-		private ConcurrentHashMap<Integer, Boolean> isLogged = new ConcurrentHashMap<Integer, Boolean>();
 
-		public ConcurrentHashMap<Integer, Boolean> getCanDeliverId() {
-			return canDeliverId;
-		}
-
-		public void setCanDeliverId(ConcurrentHashMap<Integer, Boolean> canDeliverId) {
-			this.canDeliverId = canDeliverId;
-		}
-		
-		public void log(Integer isLog) {
-			isLogged.put(isLog, true);
-		}
-		
-		public boolean isLogged(Integer isLog) {
-			if (isLogged.get(isLog) == null)
-				return false;
-			return true;
-		}
-		
-		public void addDeliver(Integer id, Boolean isDeliverable) {
-			canDeliverId.put(id, isDeliverable);
-		}
-		
-		public boolean canDeliver(Integer id) {
-			if (canDeliverId.get(id) == null)
-				return false;
-			return canDeliverId.get(id);
-		}
-	}
 
 	public Process(InetAddress ip, Integer processId, Integer port, Integer bcCount) throws IOException {
 		this.port = port;
 		this.processId = processId;
 		this.ip = ip;
+		this.fifoBC = new FIFOBroadcast(this);
 		this.bcCount = bcCount;
 		try {
 			this.socket = new DatagramSocket(this.port, this.ip);
@@ -97,7 +69,6 @@ public class Process extends Thread {
 		
 		String fileName = "da_proc_" + this.processId.toString() + ".out";
 		this.fos = new FileOutputStream(fileName);
-		this.received = new CopyOnWriteArrayList<Message>();
 
 		SigHandlerTerm sigHandlerInt = new SigHandlerTerm(this);
 		SigHandlerInt sigHandlerTerm = new SigHandlerInt(this);
@@ -111,19 +82,6 @@ public class Process extends Thread {
 		Signal.handle(signalTerm, sigHandlerTerm);
 		Signal.handle(signalUsr2, sigHandlerUsr2);
 
-	}
-
-	public ArrayList<InetSocketAddress> getProcesses() {
-		return processes;
-	}
-
-	public void setProcesses(ArrayList<InetSocketAddress> processes) {
-		this.processes = processes;
-                int i=1;
-                for(InetSocketAddress process : processes){
-                    this.fifoDelivred.put(i, new CanDeliver());
-                    i++;
-                }
 	}
 
 	public static class SigHandlerUsr2 implements SignalHandler {
@@ -142,9 +100,8 @@ public class Process extends Thread {
 			for (Integer i = 1; i <= this.p.getBcCount(); i++) {
 				Process.msgID += 1;
 				ArrayList<Message> msgList = this.p.createMessagesList(true, this.p.getProcessId());
-				FIFOBroadcast fifoBroadcast = new FIFOBroadcast(p);
 				try {
-					fifoBroadcast.sendMessage(msgList);
+					this.p.fifoBC.sendMessage(msgList);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					System.out.println("Failed to send messages.");
@@ -182,6 +139,8 @@ public class Process extends Thread {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
+			p.getpListener().interrupt();
 			p.interrupt();
 			System.exit(0);
 		}
@@ -213,6 +172,7 @@ public class Process extends Thread {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			p.getpListener().interrupt();
 			p.interrupt();
 			System.exit(0);
 		}
@@ -226,8 +186,8 @@ public class Process extends Thread {
 	 * @param destIP
 	 * @param destPort
 	 */
-	public void sendMessage(Message m, InetAddress destIP, int destPort) {
-		new Sender(m, destIP, destPort).start();
+	public void sendMessage(Message m) {
+		new Sender(m, this).start();
 	}
 	/*
 	public boolean isDelivered(Message msg) {
@@ -237,42 +197,20 @@ public class Process extends Thread {
 		return this.ackMsgs.get(msg);
 	}
 	*/
-	public boolean isDeliveredBeb(Message msg) {
-		return this.received.contains(msg);
-	}
 	
 	public Integer msgCount(Message m) {
 		Integer count = 0;
 		ArrayList<Integer> senderIds = new ArrayList<Integer>();
 		for (Message mAck : ackMsgs) {
-			if (mAck.equals(m) && !senderIds.contains(mAck.getAckSender())) {
+			if (mAck.getId().equals(m.getId()) && mAck.getSender().equals(m.getSender()) && !senderIds.contains(mAck.getAckSender())) {
 				count++;
 				senderIds.add(mAck.getAckSender());
-				//System.out.println("mAck is: " + senderIds);
 			}
 		}
 		
 		return count;
 	}
 
-	public CopyOnWriteArrayList<Message> getAckMsgs() {
-		return ackMsgs;
-	}
-
-	public boolean isAck(Message msg) {
-
-		return this.ackMsgs.contains(msg);
-	}
-
-    public void setFifoDelivred(Integer sender, Integer id, Boolean value){
-    	CanDeliver delivered = this.fifoDelivred.get(sender);
-        delivered.addDeliver(id, value);
-        this.fifoDelivred = new ConcurrentHashMap<Integer, CanDeliver>(this.fifoDelivred);
-    }
-
-    public CanDeliver getFifoDelivred(Integer sender){
-        return this.fifoDelivred.get(sender);
-    }
 	/**
 	 * This is a subclass of the class Process, and it extends Thread. It is
 	 * responsible for listening to the incoming messages.
@@ -285,7 +223,6 @@ public class Process extends Thread {
 			DatagramSocket socket = Process.this.getSocket();
 			byte[] receive = new byte[65535];
 			DatagramPacket dpReceive = null;
-			FIFOBroadcast fifoBC = new FIFOBroadcast(Process.this);
 			while (true) {
 				dpReceive = new DatagramPacket(receive, receive.length);
 				try {
@@ -301,27 +238,18 @@ public class Process extends Thread {
 						if (!msg.isAck()) {
 							if (msg.isBroadcast() && Process.this.msgCount(msg) == 0) {
 								ArrayList<Message> messages = Process.this.createMessagesList(msg);
-								// Process.this.sendMessage(ack, senderIp, senderPort);
-								// System.out.println("Received message: " + msg.getM());
 								BestEffortBroadcast beb = new BestEffortBroadcast(Process.this);
 								beb.sendMessage(messages);
-								//System.out.println("Received message: " + msg.getM());
 							}
 							Message ack = new Message(msg.getM(), senderPort,
-									senderIp, msg.getId(), true, false, msg.getSender(), Process.this.getProcessId());
-							Process.this.sendMessage(ack, senderIp, senderPort);
-							Process.this.received.add(msg);
+									senderIp, msg.getDestinationPort(), msg.getDestinationInetAddr(),
+									msg.getId(), true, false, msg.getSender(), Process.this.getProcessId());
+							ack.setThreadId(msg.getThreadId());
+							Process.this.sendMessage(ack);
 						} else {
-							Process.this.ackMsgs.add(msg);
-							CanDeliver canDel = Process.this.fifoDelivred.get(msg.getSender());
-							if (canDel != null) {
-								if (!canDel.isLogged(msg.getId()) && fifoBC.canDeliver(msg)) {
-									Process.this.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-									//System.out.println("Logging");
-									canDel.log(msg.getId());
-								}
-							}         
-							
+							threadIds.put(msg.getThreadId(), true);
+							ackMsgs.add(msg);
+							fifoBC.canDeliver(msg);
 						}
 					} catch (ClassNotFoundException e) {
 						e.printStackTrace();
@@ -337,31 +265,6 @@ public class Process extends Thread {
 
 	}
 
-	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender) {
-		ArrayList<Message> messages = new ArrayList<Message>();
-		
-		for (InetSocketAddress sa : this.processes) {
-			InetAddress addr = sa.getAddress();
-			Integer port = sa.getPort();
-			Message m = new Message(Process.msgID.toString(), port, addr, Process.msgID, false, broadcast, sender, null);
-			messages.add(m);
-		}
-		
-		return messages;
-	}
-	
-	public ArrayList<Message> createMessagesList(Message m) {
-		ArrayList<Message> messages = new ArrayList<Message>();
-
-		for (InetSocketAddress sa : this.processes) {
-			InetAddress addr = sa.getAddress();
-			Integer port = sa.getPort();
-			Message mRelay = new Message(m.getM(), port, addr, m.getId(), false, false, m.getSender(), null);
-			messages.add(mRelay);
-		}
-		
-		return messages;
-	}
 
 	/**
 	 * This class is a subclass of the class Process, and it is responsible for
@@ -370,19 +273,20 @@ public class Process extends Thread {
 	public class Sender extends Thread {
 
 		private Message msg;
-		private InetAddress destIP;
-		private Integer destPort;
+		private Process p;
 
-		public Sender(Message m, InetAddress destIP, int destPort) {
+		public Sender(Message m, Process p) {
 			this.msg = m;
-			this.destIP = destIP;
-			this.destPort = destPort;
+			this.p = p;
 		}
 
 		@Override
 		public void run() {
-			Integer port = destPort;
-			InetAddress ip = destIP;
+			Integer port = msg.getDestinationPort();
+			InetAddress ip = msg.getDestinationInetAddr();
+			
+			if (!msg.isAck())
+				msg.setThreadId(this.getId());
 
 			final ByteArrayOutputStream objectOut = new ByteArrayOutputStream();
 			ObjectOutputStream dataOut;
@@ -398,33 +302,64 @@ public class Process extends Thread {
 			final byte[] data = objectOut.toByteArray();
 
 			DatagramPacket piPacket = new DatagramPacket(data, data.length, ip, port);
-
 			try {
 				if (msg.isAck()) {
 					piSocket.send(piPacket);
-					try {
-						TimeUnit.MILLISECONDS.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-
 				} else {
-					while (true) {
-						//if (!Process.this.isAck(msg)) {
-							piSocket.send(piPacket);
-							try {
-								TimeUnit.MILLISECONDS.sleep(1000);
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-							}
-						//} else
-							//break;
+					
+					threadIds.put(this.getId(), false);
+					Integer sleepMS = 50;
+					while (!threadIds.get(this.getId())) {
+						//System.out.println("Send msgs N times: " + count);
+						piSocket.send(piPacket);
+						try {
+							TimeUnit.MILLISECONDS.sleep(sleepMS);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						sleepMS = Math.min(sleepMS*3, 500);
 					}
+					this.interrupt();
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender) {
+		ArrayList<Message> messages = new ArrayList<Message>();
+		
+		for (InetSocketAddress sa : this.processes) {
+			InetAddress addr = sa.getAddress();
+			Integer port = sa.getPort();
+			Message m = new Message(Process.msgID.toString(), port, addr, this.getPort(), this.getIp(), Process.msgID, false, broadcast, sender, null);
+			messages.add(m);
+		}
+		
+		return messages;
+	}
+	
+	public ArrayList<Message> createMessagesList(Message m) {
+		ArrayList<Message> messages = new ArrayList<Message>();
+
+		for (InetSocketAddress sa : this.processes) {
+			InetAddress addr = sa.getAddress();
+			Integer port = sa.getPort();
+			Message mRelay = new Message(m.getM(), port, addr, this.getPort(), this.getIp(), m.getId(), false, false, m.getSender(), null);
+			messages.add(mRelay);
+		}
+		
+		return messages;
+	}
+	
+	public ArrayList<InetSocketAddress> getProcesses() {
+		return processes;
+	}
+
+	public void setProcesses(ArrayList<InetSocketAddress> processes) {
+		this.processes = processes;
+		this.fifoBC.setProcesses();
 	}
 
 	public void log(String l) {
@@ -437,6 +372,10 @@ public class Process extends Thread {
 
 	public void setLogMsg(String logMsg) {
 		this.logMsg = logMsg;
+	}
+
+	public CopyOnWriteArrayList<Message> getAckMsgs() {
+		return ackMsgs;
 	}
 
 	public InetAddress getIp() {
@@ -482,14 +421,33 @@ public class Process extends Thread {
 	public void setFos(FileOutputStream fos) {
 		this.fos = fos;
 	}
+
+
+
+	public ConcurrentHashMap<Long, Boolean> getThreadIds() {
+		return threadIds;
+	}
+
+	public void setThreadIds(ConcurrentHashMap<Long, Boolean> threadIds) {
+		this.threadIds = threadIds;
+	}
+
+	public FIFOBroadcast getFifoBC() {
+		return fifoBC;
+	}
+	public void setFifoBC(FIFOBroadcast fifoBC) {
+		this.fifoBC = fifoBC;
+	}
+	public Listener getpListener() {
+		return pListener;
+	}
+	public void setpListener(Listener pListener) {
+		this.pListener = pListener;
+	}
+	public void setAckMsgs(CopyOnWriteArrayList<Message> ackMsgs) {
+		this.ackMsgs = ackMsgs;
+	}
 	
-	public CopyOnWriteArrayList<Message> getReceived() {
-		return received;
-	}
-
-	public void setReceived(CopyOnWriteArrayList<Message> received) {
-		this.received = received;
-	}
-
+	
 	
 }

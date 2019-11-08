@@ -21,12 +21,12 @@ public class BestEffortBroadcast {
 		 */
 		
 		for (Message m : messages) {
-			p.sendMessage(m, m.getDestinationInetAddr(), m.getDestinationPort());
+			p.sendMessage(m);
 		}
 
 	}
 
 	public boolean deliverMessage(Message msg) {
-		return p.isDeliveredBeb(msg);
+		return true;
 	}
 }
