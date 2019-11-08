@@ -4,4 +4,5 @@
 DistributedAlgo/.classpath
 DistributedAlgo/.project
 DistributedAlgo/bin/
-DistributedAlgo/src/*.class
+DistributedAlgo/src/*
+!DistributedAlgo/src/*.java
