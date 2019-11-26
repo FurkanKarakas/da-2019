@@ -1,5 +1,6 @@
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Objects;
 
 public class Message implements Serializable {
@@ -19,6 +20,7 @@ public class Message implements Serializable {
 	private boolean broadcast;
 	private Integer sender;
 	private Integer ackSender;
+	private final ArrayList<Integer> vectorClock;
 
 	/**
 	 * 
@@ -36,8 +38,8 @@ public class Message implements Serializable {
 	 *                            acknowledgment message
 	 */
 	public Message(String m, Integer destinationPort, InetAddress destinationInetAddr, Integer sourcePort,
-			InetAddress sourceInetAddr, Integer id, boolean isAck, boolean broadcast, Integer sender,
-			Integer ackSender) {
+			InetAddress sourceInetAddr, Integer id, boolean isAck, boolean broadcast, Integer sender, Integer ackSender,
+			ArrayList<Integer> vectorClock) {
 		this.m = m;
 		this.destinationPort = destinationPort;
 		this.destinationInetAddr = destinationInetAddr;
@@ -48,6 +50,11 @@ public class Message implements Serializable {
 		this.broadcast = broadcast;
 		this.sender = sender;
 		this.ackSender = ackSender;
+		this.vectorClock = vectorClock;
+	}
+
+	public ArrayList<Integer> getVectorClock() {
+		return vectorClock;
 	}
 
 	public Integer getId() {

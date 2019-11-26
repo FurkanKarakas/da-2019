@@ -21,13 +21,13 @@ public class Da_proc {
             Process pi = null;
 
             // Parse first line from membership file that has total numbers of processes
-            Integer.parseInt(sc.nextLine());
+            Integer n = Integer.parseInt(sc.nextLine());
 
             // processes read all process IP addresses and port numbers from membership file
             ArrayList<InetSocketAddress> processes = new ArrayList<InetSocketAddress>();
 
             // Read the membership file
-            while (sc.hasNextLine()) {
+            for (Integer i = 0; i < n; i++) {
                 // Read one line
                 String[] params = sc.nextLine().trim().split(" ");
                 Integer currentID = Integer.parseInt(params[0]);
@@ -39,7 +39,20 @@ public class Da_proc {
 
                 // Check if the ID's match
                 if (currentID == processID) {
-                    pi = new Process(piAddr, port, processID, broadcastCount);
+                    pi = new Process(piAddr, port, processID, broadcastCount, n);
+                }
+                // Set all of the affected processes to false
+                pi.setIsAffected(i, false);
+            }
+
+            // Read the dependencies between processes
+            for (Integer i = 0; i < n; i++) {
+                String[] params = sc.nextLine().trim().split(" ");
+                if (i + 1 == processID) {
+                    for (int j = 0; j < params.length; j++) {
+                        pi.setIsAffected(Integer.parseInt(params[j]) - 1, true);
+                    }
+                    break;
                 }
             }
 
