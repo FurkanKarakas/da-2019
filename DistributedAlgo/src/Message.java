@@ -20,7 +20,7 @@ public class Message implements Serializable {
 	private boolean broadcast;
 	private Integer sender;
 	private Integer ackSender;
-	private final ArrayList<Integer> vectorClock;
+	private ArrayList<Integer> vectorClock;
 
 	/**
 	 * 

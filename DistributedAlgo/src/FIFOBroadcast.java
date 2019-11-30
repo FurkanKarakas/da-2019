@@ -14,7 +14,7 @@ public class FIFOBroadcast {
 	}
 
 	public void setProcesses() {
-		for (Integer i = 1; i <= p.getProcesses().size(); i++) {
+		for (Integer i = 1; i <= p.getProcessCount(); i++) {
 			this.fifoDelivered.put(i, new CanDeliver());
 		}
 	}
@@ -74,6 +74,10 @@ public class FIFOBroadcast {
 				startIdx++;
 				FIFOBroadcast.this.p.log("d " + msg.getSender() + " " + msg.getM() + "\n");
 				msg = receivedMesgs.get(startIdx);
+				
+				// Increase vector clock
+				Integer senderIndex = msg.getSender()-1;
+				p.increaseVectorClock(senderIndex);
 			}
 		}
 	}

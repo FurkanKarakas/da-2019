@@ -40,16 +40,17 @@ public class Da_proc {
                 // Check if the ID's match
                 if (currentID == processID) {
                     pi = new Process(piAddr, port, processID, broadcastCount, n);
+                    // Set all of the affected processes to false
+                    for (Integer j = 0; j < n; j++)
+                    	pi.setIsAffected(j, false);
                 }
-                // Set all of the affected processes to false
-                pi.setIsAffected(i, false);
             }
 
             // Read the dependencies between processes
             for (Integer i = 0; i < n; i++) {
                 String[] params = sc.nextLine().trim().split(" ");
                 if (i + 1 == processID) {
-                    for (int j = 0; j < params.length; j++) {
+                    for (int j = 1; j < params.length; j++) {
                         pi.setIsAffected(Integer.parseInt(params[j]) - 1, true);
                     }
                     break;
