@@ -73,11 +73,13 @@ public class FIFOBroadcast {
 				this.alreadyDelivered.getAndIncrement();
 				startIdx++;
 				FIFOBroadcast.this.p.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-				msg = receivedMesgs.get(startIdx);
-				
+
 				// Increase vector clock
-				Integer senderIndex = msg.getSender()-1;
+				Integer senderIndex = msg.getSender() - 1;
 				p.increaseVectorClock(senderIndex);
+
+				msg = receivedMesgs.get(startIdx);
+
 			}
 		}
 	}

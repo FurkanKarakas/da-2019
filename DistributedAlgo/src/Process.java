@@ -27,7 +27,7 @@ public class Process extends Thread {
 	private ArrayList<InetSocketAddress> processes; // List of all process IP/port numbers from the membership file
 	private Integer broadcastCount; // The broadcast count m given in the membership file
 	private Integer processCount;
-	
+
 	private FileOutputStream fos; // File output stream for da_proc_n.out
 	private String logMsg = ""; // Log message that is written to the file in the end
 
@@ -55,8 +55,7 @@ public class Process extends Thread {
 	 * @param broadcastCount - The broadcast count m given in the membership file
 	 */
 
-	public Process(InetAddress ip, Integer port, Integer processId, Integer broadcastCount,
-			Integer n) {
+	public Process(InetAddress ip, Integer port, Integer processId, Integer broadcastCount, Integer n) {
 
 		// Initialize the variables
 		this.ip = ip;
@@ -66,13 +65,13 @@ public class Process extends Thread {
 		this.vectorClock = new ArrayList<Integer>();
 		this.isAffected = new ArrayList<Boolean>();
 		this.processCount = n;
-		
+
 		for (int i = 0; i < n; i++) {
 			vectorClock.add(0);
 		}
 		// LocalizedCausalBroadcast is to used broadcast and deliver messages
 		this.LCB = new LocalizedCausalBroadcast(this);
-		
+
 		// FIFOBroadcast is to used broadcast and deliver messages
 		// this.fifoBC = new FIFOBroadcast(this);
 
@@ -138,6 +137,7 @@ public class Process extends Thread {
 
 			p.getpListener().interrupt();
 			p.interrupt();
+			// p.getLCB().
 			System.exit(0);
 		}
 	}
@@ -381,10 +381,10 @@ public class Process extends Thread {
 			}
 		}
 	}
-	
+
 	public ArrayList<Integer> mask() {
 		ArrayList<Integer> maskedVC = new ArrayList<Integer>();
-		
+
 		for (Integer i = 0; i < this.vectorClock.size(); i++) {
 			if (isAffected.get(i))
 				maskedVC.add(this.vectorClock.get(i));
@@ -427,16 +427,17 @@ public class Process extends Thread {
 		for (InetSocketAddress sa : getProcesses()) {
 			InetAddress addr = sa.getAddress();
 			Integer port = sa.getPort();
-			Message mRelay = new Message(m.getM(), port, addr, this.getPort(), this.getIp(), m.getId(), false,
-					false, m.getSender(), null, m.getVectorClock());
+			Message mRelay = new Message(m.getM(), port, addr, this.getPort(), this.getIp(), m.getId(), false, false,
+					m.getSender(), null, m.getVectorClock());
 			messages.add(mRelay);
 		}
 		return messages;
 	}
-	
+
 	/**
-	 * Increase the vector clock of index by one.
-	 * The function is used in FIFO broadcast.
+	 * Increase the vector clock of index by one. The function is used in FIFO
+	 * broadcast.
+	 * 
 	 * @param index - The index of vector clock that we want to increase.
 	 */
 	public void increaseVectorClock(Integer index) {
@@ -524,15 +525,11 @@ public class Process extends Thread {
 	public void setThreadIds(ConcurrentHashMap<Long, Boolean> threadIds) {
 		this.threadIds = threadIds;
 	}
-/*
-	public FIFOBroadcast getFifoBC() {
-		return fifoBC;
-	}
-
-	public void setFifoBC(FIFOBroadcast fifoBC) {
-		this.fifoBC = fifoBC;
-	}
-*/
+	/*
+	 * public FIFOBroadcast getFifoBC() { return fifoBC; }
+	 * 
+	 * public void setFifoBC(FIFOBroadcast fifoBC) { this.fifoBC = fifoBC; }
+	 */
 
 	public LocalizedCausalBroadcast getLCB() {
 		return LCB;
@@ -541,7 +538,7 @@ public class Process extends Thread {
 	public void setLCB(LocalizedCausalBroadcast lCB) {
 		LCB = lCB;
 	}
-	
+
 	public Listener getpListener() {
 		return pListener;
 	}
@@ -569,5 +566,5 @@ public class Process extends Thread {
 	public void setProcessCount(Integer processCount) {
 		this.processCount = processCount;
 	}
-	
+
 }
