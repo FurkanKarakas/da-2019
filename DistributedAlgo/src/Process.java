@@ -196,9 +196,9 @@ public class Process extends Thread {
 
 				// Broadcast messages 1->m
 				Process.msgID += 1;
-				ArrayList<Message> msgList = this.p.createMessagesList(true, this.p.getProcessId());
+				
 				try {
-					this.p.getLCB().sendMessage(msgList);
+					this.p.getLCB().sendMessage(Process.msgID);
 				} catch (IOException e) {
 					System.out.println("Failed to send messages.");
 				}
@@ -382,15 +382,12 @@ public class Process extends Thread {
 		}
 	}
 
-	public ArrayList<Integer> mask() {
-		ArrayList<Integer> maskedVC = new ArrayList<Integer>();
-
-		for (Integer i = 0; i < this.vectorClock.size(); i++) {
-			if (isAffected.get(i))
-				maskedVC.add(this.vectorClock.get(i));
-			else
-				maskedVC.add(0);
+	public ArrayList<Integer> mask(ArrayList<Integer> maskedVC) {
+		for (Integer i = 0; i < maskedVC.size(); i++) {
+			if (!isAffected.get(i))
+				maskedVC.set(i, 0);
 		}
+		
 		return maskedVC;
 	}
 
@@ -401,13 +398,12 @@ public class Process extends Thread {
 	 * @param sender    - Sender ID that broadcasts the messages.
 	 * @return Initial broadcast messages.
 	 */
-	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender) {
+	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender, ArrayList<Integer> maskedVectorClock) {
 		ArrayList<Message> messages = new ArrayList<Message>();
 
 		for (InetSocketAddress sa : this.getProcesses()) {
 			InetAddress destAddr = sa.getAddress();
 			Integer destPort = sa.getPort();
-			ArrayList<Integer> maskedVectorClock = mask();
 			Message m = new Message(Process.msgID.toString(), destPort, destAddr, this.getPort(), this.getIp(),
 					Process.msgID, false, broadcast, sender, null, maskedVectorClock);
 			messages.add(m);

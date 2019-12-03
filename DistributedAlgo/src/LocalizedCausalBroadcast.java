@@ -18,7 +18,11 @@ public class LocalizedCausalBroadcast {
 		lcbDeliver.start();
 	}
 
-	public void sendMessage(ArrayList<Message> messages) throws IOException {
+	public void sendMessage(Integer msgID) throws IOException {
+		ArrayList<Integer> vectorClockCurrent = new ArrayList<Integer>(this.p.getVectorClock());
+		vectorClockCurrent = this.p.mask(vectorClockCurrent);
+		ArrayList<Message> messages = this.p.createMessagesList(true, msgID, vectorClockCurrent);
+		this.p.log("b " + msgID + "\n");
 		this.fifoBC.sendMessage(messages);
 	}
 

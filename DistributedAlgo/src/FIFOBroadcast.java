@@ -21,9 +21,9 @@ public class FIFOBroadcast {
 
 	public void sendMessage(ArrayList<Message> messages) throws IOException {
 		// Log the broadcast based on first message
-		Message m0 = messages.get(0);
-		if (m0 != null)
-			this.p.log("b " + m0.getId() + "\n");
+		// Message m0 = messages.get(0);
+		// if (m0 != null)
+			// this.p.log("b " + m0.getId() + "\n");
 
 		// URB broadcast all messages
 		this.urb.sendMessage(messages);
