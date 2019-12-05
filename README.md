@@ -7,7 +7,7 @@ This is the mandatory project in the Distributed Algorithms course at Swiss Fede
 ### Authors
 
 * Henrik Milan: <henrik.milan@epfl.ch>
-* Othman Sefraoui: <othman.sefraoui@efl.ch>
+* Othman Sefraoui: <othman.sefraoui@epfl.ch>
 * Furkan Karakas: <furkan.karakas@epfl.ch>
 
 ### Content of the Project
