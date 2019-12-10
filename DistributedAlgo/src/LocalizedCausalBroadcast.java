@@ -28,7 +28,7 @@ public class LocalizedCausalBroadcast {
                   this.p.loglock.unlock();
                 }
                 this.p.VClock.lock();
-		ArrayList<Integer> vectorClockCurrent = new ArrayList<Integer>(this.p.getVectorClock());
+		CopyOnWriteArrayList<Integer> vectorClockCurrent = new CopyOnWriteArrayList<Integer>(this.p.getVectorClock());
                 this.p.VClock.unlock();
 		vectorClockCurrent = this.p.mask(vectorClockCurrent);
 		ArrayList<Message> messages = this.p.createMessagesList(true, this.p.getProcessId(), vectorClockCurrent);
@@ -42,9 +42,9 @@ public class LocalizedCausalBroadcast {
 	}
 
 	public boolean canLCBdeliver(Message message) {
-		ArrayList<Integer> messageVC = message.getVectorClock();
+		CopyOnWriteArrayList<Integer> messageVC = message.getVectorClock();
                 this.p.VClock2.lock();
-		ArrayList<Integer> processVC = p.getVectorClock();
+		CopyOnWriteArrayList<Integer> processVC = p.getVectorClock();
                 this.p.VClock2.lock();
 		boolean canLCBdeliver = true;
                 if(processVC.get(message.getSender()-1)!=message.getId()-1){
@@ -73,11 +73,8 @@ public class LocalizedCausalBroadcast {
 						pending.remove(message);
                                                 p.Pendinglock2.unlock();
 					}
-                                        try {
-                                            TimeUnit.MILLISECONDS.sleep(1);
-                                        } catch (InterruptedException e) {
-                                            System.out.println("Failed to sleep in deliver thread.");
-				}   
+
+				   
 				}
 				try {
 					TimeUnit.MILLISECONDS.sleep(100);

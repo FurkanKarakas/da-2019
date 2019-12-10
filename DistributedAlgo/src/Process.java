@@ -1,5 +1,3 @@
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -18,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 public class Process extends Thread {
 	private DatagramSocket socket; // Socket used to send and receive messages
@@ -33,7 +33,10 @@ public class Process extends Thread {
 	private String logMsg = ""; // Log message that is written to the file in the end
 
 	private ArrayList<Boolean> isAffected;
-	private ArrayList<Integer> vectorClock;
+	private CopyOnWriteArrayList<Integer> vectorClock;
+
+	// A list of messages to sending
+	private CopyOnWriteArrayList<Message> sendMessages;
 
 	// A list of acknowledgment messages
 	private volatile CopyOnWriteArrayList<Message> ackMsgs = new CopyOnWriteArrayList<Message>();
@@ -44,7 +47,9 @@ public class Process extends Thread {
 
 	private LocalizedCausalBroadcast LCB;
 	// private FIFOBroadcast fifoBC;
+	private SenderListener sListener;
 	private Listener pListener;
+
 	static Integer msgID = 0;
         ReentrantLock VClock = new ReentrantLock();
         ReentrantLock VClock2 = new ReentrantLock();
@@ -71,7 +76,8 @@ public class Process extends Thread {
 		this.port = port;
 		this.processId = processId;
 		this.broadcastCount = broadcastCount;
-		this.vectorClock = new ArrayList<Integer>();
+		this.vectorClock = new CopyOnWriteArrayList<Integer>();
+		this.sendMessages = new CopyOnWriteArrayList<Message>();
 		this.isAffected = new ArrayList<Boolean>();
 		this.processCount = n;
 
@@ -92,6 +98,9 @@ public class Process extends Thread {
 		}
 		pListener = new Listener();
 		pListener.start();
+
+		sListener = new SenderListener();
+		sListener.start();
 
 		// Initialize the FileOutputStream with the given output file name
 		String fileName = "da_proc_" + this.processId.toString() + ".out";
@@ -145,6 +154,7 @@ public class Process extends Thread {
 			}
 
 			p.getpListener().interrupt();
+			p.getsListener().interrupt();
 			p.interrupt();
 			// p.getLCB().
 			System.exit(0);
@@ -180,6 +190,7 @@ public class Process extends Thread {
 			}
 
 			p.getpListener().interrupt();
+			p.getsListener().interrupt();
 			p.interrupt();
 			System.exit(0);
 		}
@@ -214,7 +225,7 @@ public class Process extends Thread {
 
 				// Wait some milliseconds between broadcasts
 				try {
-					TimeUnit.MILLISECONDS.sleep(30);
+					TimeUnit.MILLISECONDS.sleep(10);
 				} catch (InterruptedException e) {
 					System.out.println("Timeout interrupted.");
 				}
@@ -232,6 +243,9 @@ public class Process extends Thread {
 	 * @param m - Message to be sent
 	 */
 	public void sendMessage(Message m) {
+		//if (!this.sendMessages.contains(m))
+		this.sendMessages.add(m);
+		//System.out.println(this.sendMessages.size());
 		new Sender(m).start();
 	}
 
@@ -253,6 +267,32 @@ public class Process extends Thread {
 		return count;
 	}
 
+	public class SenderListener extends Thread {
+  		@Override
+		public void run() {
+
+
+			// Keep listening for messages for the whole duration of the process
+			while (true) {
+				try {
+					TimeUnit.MILLISECONDS.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+
+				for (Message m : Process.this.sendMessages) {
+					new Sender(m).start();
+					try {
+						TimeUnit.MILLISECONDS.sleep(5);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+	}
+
+
 	/**
 	 * This is a subclass of the class Process, and it extends Thread. It is
 	 * responsible for listening to the incoming messages.
@@ -268,6 +308,7 @@ public class Process extends Thread {
 
 			// Keep listening for messages for the whole duration of the process
 			while (true) {
+
 				dpReceive = new DatagramPacket(receive, receive.length);
 				try {
 					// Receive a new message
@@ -302,8 +343,8 @@ public class Process extends Thread {
 							// Receive acknowledgement
 
 							// Set threadID true so that Sender thread stops sending
-							threadIds.put(msg.getThreadId(), true);
-
+							Process.this.sendMessages.remove(msg);
+							
 							// Add message to acknowledges and broadcast
 							ackMsgs.add(msg);
 							LCB.deliver(msg);
@@ -365,25 +406,22 @@ public class Process extends Thread {
 					piSocket.send(piPacket);
 				} else {
 					// Sleep first 50ms and increase until 500
-					Integer sleepMS = 150;
+					Integer sleepMS = 1000;
 
 					// Keep sending until we receive acknowledgment
 					threadIds.put(threadID, false);
 
-					while (!threadIds.get(threadID)) {
-						piSocket.send(piPacket);
+					piSocket.send(piPacket);
 
-						// Sleep after sending and increase sleep time
-						try {
-							TimeUnit.MILLISECONDS.sleep(sleepMS);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-						sleepMS = Math.min(sleepMS * 2, 1000);
+					// Sleep after sending and increase sleep time
+					try {
+						TimeUnit.MILLISECONDS.sleep(sleepMS);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
 					}
+					sleepMS = Math.min(sleepMS * 2, 3000);
 
-					// Stop thread
-					this.interrupt();
+
 				}
 			} catch (IOException e) {
 				System.out.println("Unable to send message.");
@@ -391,7 +429,7 @@ public class Process extends Thread {
 		}
 	}
 
-	public ArrayList<Integer> mask(ArrayList<Integer> maskedVC) {
+	public CopyOnWriteArrayList<Integer> mask(CopyOnWriteArrayList<Integer> maskedVC) {
 		for (Integer i = 0; i < maskedVC.size(); i++) {
 			if (!isAffected.get(i))
 				maskedVC.set(i, 0);
@@ -407,7 +445,7 @@ public class Process extends Thread {
 	 * @param sender    - Sender ID that broadcasts the messages.
 	 * @return Initial broadcast messages.
 	 */
-	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender, ArrayList<Integer> maskedVectorClock) {
+	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender, CopyOnWriteArrayList<Integer> maskedVectorClock) {
 		ArrayList<Message> messages = new ArrayList<Message>();
 
 		for (InetSocketAddress sa : this.getProcesses()) {
@@ -552,6 +590,15 @@ public class Process extends Thread {
 		this.pListener = pListener;
 	}
 
+	public SenderListener getsListener() {
+		return sListener;
+	}
+
+	public void setsListener(SenderListener sListener) {
+		this.sListener = sListener;
+	}
+
+
 	public ArrayList<Boolean> getIsAffected() {
 		return isAffected;
 	}
@@ -560,7 +607,7 @@ public class Process extends Thread {
 		isAffected.add(value);
 	}
 
-	public ArrayList<Integer> getVectorClock() {
+	public CopyOnWriteArrayList<Integer> getVectorClock() {
 		return vectorClock;
 	}
 

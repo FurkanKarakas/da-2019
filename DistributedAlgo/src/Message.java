@@ -1,6 +1,7 @@
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Objects;
 
 public class Message implements Serializable {
@@ -20,7 +21,7 @@ public class Message implements Serializable {
 	private boolean broadcast;
 	private Integer sender;
 	private Integer ackSender;
-	private ArrayList<Integer> vectorClock;
+	private CopyOnWriteArrayList<Integer> vectorClock;
 
 	/**
 	 * 
@@ -39,7 +40,7 @@ public class Message implements Serializable {
 	 */
 	public Message(String m, Integer destinationPort, InetAddress destinationInetAddr, Integer sourcePort,
 			InetAddress sourceInetAddr, Integer id, boolean isAck, boolean broadcast, Integer sender, Integer ackSender,
-			ArrayList<Integer> vectorClock) {
+			CopyOnWriteArrayList<Integer> vectorClock) {
 		this.m = m;
 		this.destinationPort = destinationPort;
 		this.destinationInetAddr = destinationInetAddr;
@@ -53,7 +54,7 @@ public class Message implements Serializable {
 		this.vectorClock = vectorClock;
 	}
 
-	public ArrayList<Integer> getVectorClock() {
+	public CopyOnWriteArrayList<Integer> getVectorClock() {
 		return vectorClock;
 	}
 
