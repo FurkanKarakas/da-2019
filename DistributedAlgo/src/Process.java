@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Process extends Thread {
 	private DatagramSocket socket; // Socket used to send and receive messages
@@ -45,6 +46,14 @@ public class Process extends Thread {
 	// private FIFOBroadcast fifoBC;
 	private Listener pListener;
 	static Integer msgID = 0;
+        ReentrantLock VClock = new ReentrantLock();
+        ReentrantLock VClock2 = new ReentrantLock();
+        ReentrantLock VClock3 = new ReentrantLock();
+        ReentrantLock Pendinglock = new ReentrantLock();
+        ReentrantLock Pendinglock2 = new ReentrantLock();
+        ReentrantLock loglock = new ReentrantLock();
+        ReentrantLock loglock2 = new ReentrantLock();
+        ReentrantLock loglock3 = new ReentrantLock();
 
 	/**
 	 * Process constructor
@@ -205,7 +214,7 @@ public class Process extends Thread {
 
 				// Wait some milliseconds between broadcasts
 				try {
-					TimeUnit.MILLISECONDS.sleep(50);
+					TimeUnit.MILLISECONDS.sleep(30);
 				} catch (InterruptedException e) {
 					System.out.println("Timeout interrupted.");
 				}

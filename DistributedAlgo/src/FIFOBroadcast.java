@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FIFOBroadcast {
@@ -72,12 +73,20 @@ public class FIFOBroadcast {
 			while (msg != null) {
 				this.alreadyDelivered.getAndIncrement();
 				startIdx++;
+                                FIFOBroadcast.this.p.loglock2.lock();
 				FIFOBroadcast.this.p.log("d " + msg.getSender() + " " + msg.getM() + "\n");
+                                FIFOBroadcast.this.p.loglock2.unlock();
+                                try {
+					TimeUnit.MILLISECONDS.sleep(40);
+				} catch (InterruptedException e) {
+					System.out.println("Failed to sleep in deliver thread.");
+				}
 
 				// Increase vector clock
 				Integer senderIndex = msg.getSender() - 1;
-				p.increaseVectorClock(senderIndex);
-
+                                FIFOBroadcast.this.p.VClock3.lock();
+				FIFOBroadcast.this.p.increaseVectorClock(senderIndex);
+                                FIFOBroadcast.this.p.VClock3.unlock();
 				msg = receivedMesgs.get(startIdx);
 
 			}
