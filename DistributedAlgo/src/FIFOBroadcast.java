@@ -71,23 +71,26 @@ public class FIFOBroadcast {
 			// Loop until all currently deliverable messages are logged and delivered
 			FIFOBroadcast.this.p.loglock2.lock();
 			FIFOBroadcast.this.p.VClock3.lock();
-			while (msg != null) {
-				this.alreadyDelivered.getAndIncrement();
-				startIdx++;
-                                
-				FIFOBroadcast.this.p.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-                                
+			try {
+				while (msg != null) {
+					this.alreadyDelivered.getAndIncrement();
+					startIdx++;
+									
+					FIFOBroadcast.this.p.log("d " + msg.getSender() + " " + msg.getM() + "\n");
+									
 
-				// Increase vector clock
-				Integer senderIndex = msg.getSender() - 1;
-                                
-				FIFOBroadcast.this.p.increaseVectorClock(senderIndex);
-                                
-				msg = receivedMesgs.get(startIdx);
+					// Increase vector clock
+					Integer senderIndex = msg.getSender() - 1;
+									
+					FIFOBroadcast.this.p.increaseVectorClock(senderIndex);
+									
+					msg = receivedMesgs.get(startIdx);
 
+				} 
+			} finally {
+				FIFOBroadcast.this.p.loglock2.unlock();
+				FIFOBroadcast.this.p.VClock3.unlock();
 			}
-			FIFOBroadcast.this.p.loglock2.unlock();
-			FIFOBroadcast.this.p.VClock3.unlock();
 		}
 	}
 }

@@ -13,6 +13,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,7 +31,7 @@ public class Process extends Thread {
 	private Integer processCount;
 
 	private FileOutputStream fos; // File output stream for da_proc_n.out
-	private String logMsg = ""; // Log message that is written to the file in the end
+	private ConcurrentLinkedQueue<String> logMsg = new ConcurrentLinkedQueue<String>(); // Log message that is written to the file in the end
 
 	private ArrayList<Boolean> isAffected;
 	private CopyOnWriteArrayList<Integer> vectorClock;
@@ -58,7 +59,9 @@ public class Process extends Thread {
         ReentrantLock Pendinglock2 = new ReentrantLock();
         ReentrantLock loglock = new ReentrantLock();
         ReentrantLock loglock2 = new ReentrantLock();
-        ReentrantLock loglock3 = new ReentrantLock();
+		ReentrantLock loglock3 = new ReentrantLock();
+		
+		ReentrantLock lockSender = new ReentrantLock();
 
 	/**
 	 * Process constructor
@@ -141,7 +144,8 @@ public class Process extends Thread {
 			System.out.format("Handling signal: %s\n", signal.toString());
 
 			try {
-				p.getFos().write(p.getLogMsg().getBytes());
+				for (String m : p.getLogMsg())
+					p.getFos().write(m.getBytes());
 			} catch (IOException e1) {
 				System.out.println("Failed to file to FileOutputStream.");
 			}
@@ -177,7 +181,8 @@ public class Process extends Thread {
 			System.out.format("Handling signal: %s\n", signal.toString());
 
 			try {
-				p.getFos().write(p.getLogMsg().getBytes());
+				for (String m : p.getLogMsg())
+					p.getFos().write(m.getBytes());
 			} catch (IOException e1) {
 				System.out.println("Failed to file to FileOutputStream.");
 			}
@@ -280,14 +285,17 @@ public class Process extends Thread {
 					e.printStackTrace();
 				}
 
+				//Process.this.lockSender.lock();
 				for (Message m : Process.this.sendMessages) {
-					new Sender(m).start();
+					if (!m.getSent())
+						new Sender(m).start();
 					try {
 						TimeUnit.MILLISECONDS.sleep(1);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
+				//Process.this.lockSender.unlock();
 			}
 		}
 	}
@@ -343,7 +351,9 @@ public class Process extends Thread {
 							// Receive acknowledgement
 
 							// Set threadID true so that Sender thread stops sending
-							Process.this.removeSendMsg(msg);
+							//Process.this.lockSender.lock();
+							//Process.this.removeSendMsg(msg);
+							//Process.this.lockSender.unlock();
 							
 							// Add message to acknowledges and broadcast
 							ackMsgs.add(msg);
@@ -362,29 +372,16 @@ public class Process extends Thread {
 		}
 	}
 
-	public boolean checkIfContains(Message msg) {
-		for (Message m : sendMessages) {
-			if (m.getId().equals(msg.getId())
-				&& m.getM().equals(msg.getM())
-				&& m.getDestinationInetAddr().equals(msg.getDestinationInetAddr())
-				&& m.getDestinationPort().equals(msg.getDestinationPort())
-				&& m.getSender().equals(msg.getSender())
-				&& m.isAck() == msg.isAck()
-				)
-				return true;
-		}
-		return false;
-	}
-
 	public void removeSendMsg(Message msg) {
 		for (Message m : sendMessages) {
 			if (m.getId().equals(msg.getId())
 				&& m.getM().equals(msg.getM())
 				&& m.getDestinationInetAddr().equals(msg.getSourceInetAddr())
 				&& m.getDestinationPort().equals(msg.getSourcePort())
-				&& m.getSender() == msg.getSender()
-				)
-				sendMessages.remove(m);
+				&& m.getSender().equals(msg.getSender())
+				) {
+				m.setSent(true);
+			}
 		}
 	}
 
@@ -503,16 +500,13 @@ public class Process extends Thread {
 	}
 
 	public void log(String l) {
-		this.logMsg = this.logMsg + l;
+		this.logMsg.add(l);
 	}
 
-	public String getLogMsg() {
+	public ConcurrentLinkedQueue<String> getLogMsg() {
 		return logMsg;
 	}
 
-	public void setLogMsg(String logMsg) {
-		this.logMsg = logMsg;
-	}
 
 	public CopyOnWriteArrayList<Message> getAckMsgs() {
 		return ackMsgs;
