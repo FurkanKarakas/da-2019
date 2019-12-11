@@ -225,7 +225,7 @@ public class Process extends Thread {
 
 				// Wait some milliseconds between broadcasts
 				try {
-					TimeUnit.MILLISECONDS.sleep(10);
+					TimeUnit.MILLISECONDS.sleep(30);
 				} catch (InterruptedException e) {
 					System.out.println("Timeout interrupted.");
 				}
@@ -243,8 +243,8 @@ public class Process extends Thread {
 	 * @param m - Message to be sent
 	 */
 	public void sendMessage(Message m) {
-		//if (!this.sendMessages.contains(m))
-		this.sendMessages.add(m);
+		if (!m.isAck())
+			this.sendMessages.add(m);
 		//System.out.println(this.sendMessages.size());
 		new Sender(m).start();
 	}
@@ -275,7 +275,7 @@ public class Process extends Thread {
 			// Keep listening for messages for the whole duration of the process
 			while (true) {
 				try {
-					TimeUnit.MILLISECONDS.sleep(500);
+					TimeUnit.MILLISECONDS.sleep(100);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -283,7 +283,7 @@ public class Process extends Thread {
 				for (Message m : Process.this.sendMessages) {
 					new Sender(m).start();
 					try {
-						TimeUnit.MILLISECONDS.sleep(5);
+						TimeUnit.MILLISECONDS.sleep(2);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -343,7 +343,7 @@ public class Process extends Thread {
 							// Receive acknowledgement
 
 							// Set threadID true so that Sender thread stops sending
-							Process.this.sendMessages.remove(msg);
+							Process.this.removeSendMsg(msg);
 							
 							// Add message to acknowledges and broadcast
 							ackMsgs.add(msg);
@@ -359,6 +359,32 @@ public class Process extends Thread {
 					System.out.println("Unable to read socket data.");
 				}
 			}
+		}
+	}
+
+	public boolean checkIfContains(Message msg) {
+		for (Message m : sendMessages) {
+			if (m.getId().equals(msg.getId())
+				&& m.getM().equals(msg.getM())
+				&& m.getDestinationInetAddr().equals(msg.getDestinationInetAddr())
+				&& m.getDestinationPort().equals(msg.getDestinationPort())
+				&& m.getSender().equals(msg.getSender())
+				&& m.isAck() == msg.isAck()
+				)
+				return true;
+		}
+		return false;
+	}
+
+	public void removeSendMsg(Message msg) {
+		for (Message m : sendMessages) {
+			if (m.getId().equals(msg.getId())
+				&& m.getM().equals(msg.getM())
+				&& m.getDestinationInetAddr().equals(msg.getSourceInetAddr())
+				&& m.getDestinationPort().equals(msg.getSourcePort())
+				&& m.getSender() == msg.getSender()
+				)
+				sendMessages.remove(m);
 		}
 	}
 
@@ -401,28 +427,7 @@ public class Process extends Thread {
 
 			// Send packet
 			try {
-				if (msg.isAck()) {
-					// Send acknowledgement
-					piSocket.send(piPacket);
-				} else {
-					// Sleep first 50ms and increase until 500
-					Integer sleepMS = 1000;
-
-					// Keep sending until we receive acknowledgment
-					threadIds.put(threadID, false);
-
-					piSocket.send(piPacket);
-
-					// Sleep after sending and increase sleep time
-					try {
-						TimeUnit.MILLISECONDS.sleep(sleepMS);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					sleepMS = Math.min(sleepMS * 2, 3000);
-
-
-				}
+				piSocket.send(piPacket);
 			} catch (IOException e) {
 				System.out.println("Unable to send message.");
 			}
@@ -618,5 +623,10 @@ public class Process extends Thread {
 	public void setProcessCount(Integer processCount) {
 		this.processCount = processCount;
 	}
+
+	public CopyOnWriteArrayList<Message> getSendMessages() {
+		return sendMessages;
+	}
+
 
 }
