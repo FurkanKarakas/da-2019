@@ -69,8 +69,7 @@ public class FIFOBroadcast {
 			Message msg = receivedMesgs.get(startIdx);
 
 			// Loop until all currently deliverable messages are logged and delivered
-			FIFOBroadcast.this.p.loglock2.lock();
-			FIFOBroadcast.this.p.VClock3.lock();
+			FIFOBroadcast.this.p.VClock.lock();
 			try {
 				while (msg != null) {
 					this.alreadyDelivered.getAndIncrement();
@@ -88,8 +87,7 @@ public class FIFOBroadcast {
 
 				} 
 			} finally {
-				FIFOBroadcast.this.p.loglock2.unlock();
-				FIFOBroadcast.this.p.VClock3.unlock();
+				FIFOBroadcast.this.p.VClock.unlock();
 			}
 		}
 	}

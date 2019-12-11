@@ -44,16 +44,15 @@ public class LocalizedCausalBroadcast {
 	}
 
 	public boolean canLCBdeliver(Message message) {
-		this.p.VClock2.lock();
+		this.p.VClock.lock();
 		boolean canLCBdeliver = true;
 		try {
 			CopyOnWriteArrayList<Integer> messageVC = message.getVectorClock();
 			CopyOnWriteArrayList<Integer> processVC = p.getVectorClock();
-					
 			
-					if(processVC.get(message.getSender()-1)!=message.getId()-1){
-						canLCBdeliver = false;
-					}
+			if (processVC.get(message.getSender()-1)!=message.getId()-1){
+				canLCBdeliver = false;
+			}
 			for (Integer i = 0; i < messageVC.size(); i++) {
 				if (messageVC.get(i) > processVC.get(i)) {
 					canLCBdeliver = false;
@@ -61,7 +60,7 @@ public class LocalizedCausalBroadcast {
 				}
 			}
 		} finally {
-			this.p.VClock2.unlock();
+			this.p.VClock.unlock();
 		}
 		return canLCBdeliver;
 	}
@@ -73,7 +72,7 @@ public class LocalizedCausalBroadcast {
 			System.out.println("Starting Localised Causal Broadcast thread.");
 			
 			while (true) {
-				p.Pendinglock2.lock();
+				p.Pendinglock.lock();
 				try {
 					for (Message message : pending) {
 						if (canLCBdeliver(message)) {
@@ -84,7 +83,7 @@ public class LocalizedCausalBroadcast {
 						}
 					}
 				} finally {
-					p.Pendinglock2.unlock();
+					p.Pendinglock.unlock();
 				}
 				try {
 					TimeUnit.MILLISECONDS.sleep(100);
