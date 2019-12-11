@@ -225,7 +225,7 @@ public class Process extends Thread {
 
 				// Wait some milliseconds between broadcasts
 				try {
-					TimeUnit.MILLISECONDS.sleep(30);
+					TimeUnit.MILLISECONDS.sleep(10);
 				} catch (InterruptedException e) {
 					System.out.println("Timeout interrupted.");
 				}
@@ -283,7 +283,7 @@ public class Process extends Thread {
 				for (Message m : Process.this.sendMessages) {
 					new Sender(m).start();
 					try {
-						TimeUnit.MILLISECONDS.sleep(2);
+						TimeUnit.MILLISECONDS.sleep(1);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
