@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 
 public class LocalizedCausalBroadcast {
 	private Process p;
@@ -19,11 +18,11 @@ public class LocalizedCausalBroadcast {
 	}
 
 	public void sendMessage(Integer msgID) throws IOException {
-		
+
 		try {
-                        this.p.VClock.lock();
-                        ArrayList<Integer> vectorClockCurrent = new ArrayList<Integer>(this.p.getVectorClock());
-			this.p.log("b " + msgID + "\n");		
+			this.p.VClock.lock();
+			ArrayList<Integer> vectorClockCurrent = new ArrayList<Integer>(this.p.getVectorClock());
+			this.p.log("b " + msgID + "\n");
 			this.p.VClock.unlock();
 			vectorClockCurrent = this.p.mask(vectorClockCurrent);
 			ArrayList<Message> messages = this.p.createMessagesList(true, this.p.getProcessId(), vectorClockCurrent);
@@ -43,14 +42,13 @@ public class LocalizedCausalBroadcast {
 	}
 
 	public boolean canLCBdeliver(Message message) {
-		//this.p.VClock.lock();
+		// this.p.VClock.lock();
 		boolean canLCBdeliver = true;
-                ArrayList<Integer> list = new ArrayList<Integer>();
 		try {
 			ArrayList<Integer> messageVC = message.getVectorClock();
 			ArrayList<Integer> processVC = p.getVectorClock();
-			
-			if (processVC.get(message.getSender()-1)!=message.getId()-1){
+
+			if (processVC.get(message.getSender() - 1) != message.getId() - 1) {
 				canLCBdeliver = false;
 			}
 			for (Integer i = 0; i < messageVC.size(); i++) {
@@ -60,7 +58,7 @@ public class LocalizedCausalBroadcast {
 				}
 			}
 		} finally {
-			//this.p.VClock.unlock();
+			// this.p.VClock.unlock();
 		}
 		return canLCBdeliver;
 	}
@@ -69,24 +67,23 @@ public class LocalizedCausalBroadcast {
 
 		@Override
 		public void run() {
-			System.out.println("Starting Localised Causal Broadcast thread.");
-			
+
 			while (true) {
-				
+
 				try {
 					for (Message message : pending) {
 						if (canLCBdeliver(message)) {
 							fifoBC.canDeliver(message);
-							p.Pendinglock.lock();						
+							p.Pendinglock.lock();
 							pending.remove(message);
-							p.Pendinglock.unlock();						
+							p.Pendinglock.unlock();
 						}
 					}
 				} finally {
-					
+
 				}
 				try {
-					TimeUnit.MILLISECONDS.sleep(100);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					System.out.println("Failed to sleep in deliver thread.");
 				}

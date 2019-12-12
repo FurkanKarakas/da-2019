@@ -2,7 +2,6 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Message implements Serializable {
 	// To serialize for sending

@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -31,7 +30,8 @@ public class Process extends Thread {
 	private Integer processCount;
 
 	private FileOutputStream fos; // File output stream for da_proc_n.out
-	private ConcurrentLinkedQueue<String> logMsg = new ConcurrentLinkedQueue<String>(); // Log message that is written to the file in the end
+	private ConcurrentLinkedQueue<String> logMsg = new ConcurrentLinkedQueue<String>(); // Log message that is written
+																						// to the file in the end
 
 	private ArrayList<Boolean> isAffected;
 	private ArrayList<Integer> vectorClock;
@@ -52,16 +52,16 @@ public class Process extends Thread {
 	private Listener pListener;
 
 	static Integer msgID = 0;
-        ReentrantLock VClock = new ReentrantLock();
-        ReentrantLock VClock2 = new ReentrantLock();
-        ReentrantLock VClock3 = new ReentrantLock();
-        ReentrantLock Pendinglock = new ReentrantLock();
-        ReentrantLock Pendinglock2 = new ReentrantLock();
-        ReentrantLock loglock = new ReentrantLock();
-        ReentrantLock loglock2 = new ReentrantLock();
-		ReentrantLock loglock3 = new ReentrantLock();
-		
-		ReentrantLock lockSender = new ReentrantLock();
+	ReentrantLock VClock = new ReentrantLock();
+	ReentrantLock VClock2 = new ReentrantLock();
+	ReentrantLock VClock3 = new ReentrantLock();
+	ReentrantLock Pendinglock = new ReentrantLock();
+	ReentrantLock Pendinglock2 = new ReentrantLock();
+	ReentrantLock loglock = new ReentrantLock();
+	ReentrantLock loglock2 = new ReentrantLock();
+	ReentrantLock loglock3 = new ReentrantLock();
+
+	ReentrantLock lockSender = new ReentrantLock();
 
 	/**
 	 * Process constructor
@@ -221,7 +221,7 @@ public class Process extends Thread {
 
 				// Broadcast messages 1->m
 				Process.msgID += 1;
-				
+
 				try {
 					this.p.getLCB().sendMessage(Process.msgID);
 				} catch (IOException e) {
@@ -230,7 +230,7 @@ public class Process extends Thread {
 
 				// Wait some milliseconds between broadcasts
 				try {
-					TimeUnit.MILLISECONDS.sleep(10);
+					Thread.sleep(10);
 				} catch (InterruptedException e) {
 					System.out.println("Timeout interrupted.");
 				}
@@ -250,7 +250,6 @@ public class Process extends Thread {
 	public void sendMessage(Message m) {
 		if (!m.isAck())
 			this.sendMessages.add(m);
-		//System.out.println(this.sendMessages.size());
 		new Sender(m).start();
 	}
 
@@ -273,35 +272,33 @@ public class Process extends Thread {
 	}
 
 	public class SenderListener extends Thread {
-  		@Override
+		@Override
 		public void run() {
-
 
 			// Keep listening for messages for the whole duration of the process
 			while (true) {
 				try {
-					TimeUnit.MILLISECONDS.sleep(100);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 
-				//Process.this.lockSender.lock();
+				// Process.this.lockSender.lock();
 				for (Message m : Process.this.sendMessages) {
-					if (!m.getSent()){
+					if (!m.getSent()) {
 						new Sender(m).start();
-                                                try {
-                                                        Thread.sleep(1);
-                                                } catch (InterruptedException e) {
-                                                        e.printStackTrace();
-                                                }
-                                        }
-					
+						try {
+							Thread.sleep(1);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+
 				}
-				//Process.this.lockSender.unlock();
+				// Process.this.lockSender.unlock();
 			}
 		}
 	}
-
 
 	/**
 	 * This is a subclass of the class Process, and it extends Thread. It is
@@ -311,7 +308,6 @@ public class Process extends Thread {
 
 		@Override
 		public void run() {
-			System.out.println("Start listener.");
 			DatagramSocket socket = getSocket();
 			byte[] receive = new byte[65535];
 			DatagramPacket dpReceive = null;
@@ -353,10 +349,10 @@ public class Process extends Thread {
 							// Receive acknowledgement
 
 							// Set threadID true so that Sender thread stops sending
-							//Process.this.lockSender.lock();
+							// Process.this.lockSender.lock();
 							Process.this.removeSendMsg(msg);
-							//Process.this.lockSender.unlock();
-							
+							// Process.this.lockSender.unlock();
+
 							// Add message to acknowledges and broadcast
 							ackMsgs.add(msg);
 							LCB.deliver(msg);
@@ -375,32 +371,29 @@ public class Process extends Thread {
 	}
 
 	public void removeSendMsg(Message msg) {
-            for(Integer i = 0;i<sendMessages.size(); i++){
-                Message m = sendMessages.get(i);
-                if (m.getId().equals(msg.getId())
-				&& m.getM().equals(msg.getM())
-				&& m.getDestinationInetAddr().equals(msg.getSourceInetAddr())
-				&& m.getDestinationPort().equals(msg.getSourcePort())
-				&& m.getSourceInetAddr().equals(msg.getDestinationInetAddr())
-				&& m.getSourcePort().equals(msg.getDestinationPort())
-				&& m.getSender().equals(msg.getSender())
-				&& m.isBroadcast() == msg.isBroadcast()
-				) {
-                                    sendMessages.get(i).setSent(true);
-                                    break;
+		for (Integer i = 0; i < sendMessages.size(); i++) {
+			Message m = sendMessages.get(i);
+			if (m.getId().equals(msg.getId()) && m.getM().equals(msg.getM())
+					&& m.getDestinationInetAddr().equals(msg.getSourceInetAddr())
+					&& m.getDestinationPort().equals(msg.getSourcePort())
+					&& m.getSourceInetAddr().equals(msg.getDestinationInetAddr())
+					&& m.getSourcePort().equals(msg.getDestinationPort()) && m.getSender().equals(msg.getSender())
+					&& m.isBroadcast() == msg.isBroadcast()) {
+				sendMessages.get(i).setSent(true);
+				break;
 			}
 
-            }
-//		for (Message m : sendMessages) {
-//			if (m.getId().equals(msg.getId())
-//				&& m.getM().equals(msg.getM())
-//				&& m.getDestinationInetAddr().equals(msg.getSourceInetAddr())
-//				&& m.getDestinationPort().equals(msg.getSourcePort())
-//				&& m.getSender().equals(msg.getSender())
-//				) {
-//				m.setSent(true);
-//			}
-//		}
+		}
+		// for (Message m : sendMessages) {
+		// if (m.getId().equals(msg.getId())
+		// && m.getM().equals(msg.getM())
+		// && m.getDestinationInetAddr().equals(msg.getSourceInetAddr())
+		// && m.getDestinationPort().equals(msg.getSourcePort())
+		// && m.getSender().equals(msg.getSender())
+		// ) {
+		// m.setSent(true);
+		// }
+		// }
 	}
 
 	/**
@@ -454,7 +447,7 @@ public class Process extends Thread {
 			if (!isAffected.get(i))
 				maskedVC.set(i, 0);
 		}
-		
+
 		return maskedVC;
 	}
 
@@ -465,7 +458,8 @@ public class Process extends Thread {
 	 * @param sender    - Sender ID that broadcasts the messages.
 	 * @return Initial broadcast messages.
 	 */
-	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender, ArrayList<Integer> maskedVectorClock) {
+	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender,
+			ArrayList<Integer> maskedVectorClock) {
 		ArrayList<Message> messages = new ArrayList<Message>();
 
 		for (InetSocketAddress sa : this.getProcesses()) {
@@ -524,7 +518,6 @@ public class Process extends Thread {
 	public ConcurrentLinkedQueue<String> getLogMsg() {
 		return logMsg;
 	}
-
 
 	public CopyOnWriteArrayList<Message> getAckMsgs() {
 		return ackMsgs;
@@ -615,15 +608,16 @@ public class Process extends Thread {
 		this.sListener = sListener;
 	}
 
-
 	public ArrayList<Boolean> getIsAffected() {
 		return isAffected;
 	}
-        public void addToIsAffected(boolean value) {
+
+	public void addToIsAffected(boolean value) {
 		isAffected.add(value);
 	}
+
 	public void setIsAffected(int index, boolean value) {
-		isAffected.set(index,value);
+		isAffected.set(index, value);
 	}
 
 	public ArrayList<Integer> getVectorClock() {
@@ -641,6 +635,5 @@ public class Process extends Thread {
 	public CopyOnWriteArrayList<Message> getSendMessages() {
 		return sendMessages;
 	}
-
 
 }

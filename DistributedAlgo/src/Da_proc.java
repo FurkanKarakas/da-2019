@@ -42,10 +42,10 @@ public class Da_proc {
                     pi = new Process(piAddr, port, processID, broadcastCount, n);
                     // Set all of the affected processes to false
                     for (Integer j = 0; j < n; j++)
-                    	pi.addToIsAffected(false);
+                        pi.addToIsAffected(false);
                 }
             }
-            
+
             // Read the dependencies between processes
             for (Integer i = 0; i < n; i++) {
                 String[] params = sc.nextLine().trim().split(" ");
@@ -56,7 +56,6 @@ public class Da_proc {
                     break;
                 }
             }
-            System.out.println(pi.getIsAffected().toString()+pi.getProcessId().toString());
             // Finally set list of all processes to the current process
             pi.setProcesses(processes);
             sc.close();
