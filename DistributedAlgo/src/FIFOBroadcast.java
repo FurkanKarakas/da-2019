@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FIFOBroadcast {
@@ -69,25 +70,29 @@ public class FIFOBroadcast {
 			Message msg = receivedMesgs.get(startIdx);
 
 			// Loop until all currently deliverable messages are logged and delivered
-			FIFOBroadcast.this.p.VClock.lock();
+			
 			try {
 				while (msg != null) {
 					this.alreadyDelivered.getAndIncrement();
 					startIdx++;
-									
+                                        FIFOBroadcast.this.p.VClock.lock();
 					FIFOBroadcast.this.p.log("d " + msg.getSender() + " " + msg.getM() + "\n");
-									
-
+                                        /*try {
+                                            TimeUnit.MILLISECONDS.sleep(40);
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
+                                        }*/
+                                        
 					// Increase vector clock
 					Integer senderIndex = msg.getSender() - 1;
 									
-					FIFOBroadcast.this.p.increaseVectorClock(senderIndex);
-									
+					FIFOBroadcast.this.p.increaseVectorClock(senderIndex);	
+                                        FIFOBroadcast.this.p.VClock.unlock();
 					msg = receivedMesgs.get(startIdx);
 
 				} 
 			} finally {
-				FIFOBroadcast.this.p.VClock.unlock();
+				
 			}
 		}
 	}

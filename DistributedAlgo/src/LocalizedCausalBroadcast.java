@@ -19,18 +19,17 @@ public class LocalizedCausalBroadcast {
 	}
 
 	public void sendMessage(Integer msgID) throws IOException {
-		this.p.loglock.lock();
-		this.p.VClock.lock();
+		
 		try {
-			this.p.log("b " + msgID + "\n");
-			CopyOnWriteArrayList<Integer> vectorClockCurrent = new CopyOnWriteArrayList<Integer>(this.p.getVectorClock());
-        
+                        this.p.VClock.lock();
+                        ArrayList<Integer> vectorClockCurrent = new ArrayList<Integer>(this.p.getVectorClock());
+			this.p.log("b " + msgID + "\n");		
+			this.p.VClock.unlock();
 			vectorClockCurrent = this.p.mask(vectorClockCurrent);
 			ArrayList<Message> messages = this.p.createMessagesList(true, this.p.getProcessId(), vectorClockCurrent);
 			this.fifoBC.sendMessage(messages);
 		} finally {
-			this.p.loglock.unlock();
-			this.p.VClock.unlock();
+
 		}
 	}
 
@@ -44,11 +43,12 @@ public class LocalizedCausalBroadcast {
 	}
 
 	public boolean canLCBdeliver(Message message) {
-		this.p.VClock.lock();
+		//this.p.VClock.lock();
 		boolean canLCBdeliver = true;
+                ArrayList<Integer> list = new ArrayList<Integer>();
 		try {
-			CopyOnWriteArrayList<Integer> messageVC = message.getVectorClock();
-			CopyOnWriteArrayList<Integer> processVC = p.getVectorClock();
+			ArrayList<Integer> messageVC = message.getVectorClock();
+			ArrayList<Integer> processVC = p.getVectorClock();
 			
 			if (processVC.get(message.getSender()-1)!=message.getId()-1){
 				canLCBdeliver = false;
@@ -60,7 +60,7 @@ public class LocalizedCausalBroadcast {
 				}
 			}
 		} finally {
-			this.p.VClock.unlock();
+			//this.p.VClock.unlock();
 		}
 		return canLCBdeliver;
 	}
@@ -72,18 +72,18 @@ public class LocalizedCausalBroadcast {
 			System.out.println("Starting Localised Causal Broadcast thread.");
 			
 			while (true) {
-				p.Pendinglock.lock();
+				
 				try {
 					for (Message message : pending) {
 						if (canLCBdeliver(message)) {
 							fifoBC.canDeliver(message);
-													
+							p.Pendinglock.lock();						
 							pending.remove(message);
-													
+							p.Pendinglock.unlock();						
 						}
 					}
 				} finally {
-					p.Pendinglock.unlock();
+					
 				}
 				try {
 					TimeUnit.MILLISECONDS.sleep(100);

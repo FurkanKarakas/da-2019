@@ -34,7 +34,7 @@ public class Process extends Thread {
 	private ConcurrentLinkedQueue<String> logMsg = new ConcurrentLinkedQueue<String>(); // Log message that is written to the file in the end
 
 	private ArrayList<Boolean> isAffected;
-	private CopyOnWriteArrayList<Integer> vectorClock;
+	private ArrayList<Integer> vectorClock;
 
 	// A list of messages to sending
 	private CopyOnWriteArrayList<Message> sendMessages;
@@ -79,7 +79,7 @@ public class Process extends Thread {
 		this.port = port;
 		this.processId = processId;
 		this.broadcastCount = broadcastCount;
-		this.vectorClock = new CopyOnWriteArrayList<Integer>();
+		this.vectorClock = new ArrayList<Integer>();
 		this.sendMessages = new CopyOnWriteArrayList<Message>();
 		this.isAffected = new ArrayList<Boolean>();
 		this.processCount = n;
@@ -431,7 +431,7 @@ public class Process extends Thread {
 		}
 	}
 
-	public CopyOnWriteArrayList<Integer> mask(CopyOnWriteArrayList<Integer> maskedVC) {
+	public ArrayList<Integer> mask(ArrayList<Integer> maskedVC) {
 		for (Integer i = 0; i < maskedVC.size(); i++) {
 			if (!isAffected.get(i))
 				maskedVC.set(i, 0);
@@ -447,7 +447,7 @@ public class Process extends Thread {
 	 * @param sender    - Sender ID that broadcasts the messages.
 	 * @return Initial broadcast messages.
 	 */
-	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender, CopyOnWriteArrayList<Integer> maskedVectorClock) {
+	public ArrayList<Message> createMessagesList(boolean broadcast, Integer sender, ArrayList<Integer> maskedVectorClock) {
 		ArrayList<Message> messages = new ArrayList<Message>();
 
 		for (InetSocketAddress sa : this.getProcesses()) {
@@ -601,12 +601,14 @@ public class Process extends Thread {
 	public ArrayList<Boolean> getIsAffected() {
 		return isAffected;
 	}
-
-	public void setIsAffected(int index, boolean value) {
+        public void addToIsAffected(boolean value) {
 		isAffected.add(value);
 	}
+	public void setIsAffected(int index, boolean value) {
+		isAffected.set(index,value);
+	}
 
-	public CopyOnWriteArrayList<Integer> getVectorClock() {
+	public ArrayList<Integer> getVectorClock() {
 		return vectorClock;
 	}
 
