@@ -141,8 +141,6 @@ public class Process extends Thread {
 
 		@Override
 		public void handle(Signal signal) {
-			System.out.format("Handling signal: %s\n", signal.toString());
-
 			try {
 				for (String m : p.getLogMsg())
 					p.getFos().write(m.getBytes());
@@ -178,8 +176,6 @@ public class Process extends Thread {
 
 		@Override
 		public void handle(Signal signal) {
-			System.out.format("Handling signal: %s\n", signal.toString());
-
 			try {
 				for (String m : p.getLogMsg())
 					p.getFos().write(m.getBytes());
@@ -214,9 +210,6 @@ public class Process extends Thread {
 
 		@Override
 		public void handle(Signal signal) {
-
-			System.out.format("Handling signal: %s\n", signal.toString());
-
 			for (Integer i = 1; i <= this.p.getBroadcastCount(); i++) {
 
 				// Broadcast messages 1->m
@@ -280,7 +273,7 @@ public class Process extends Thread {
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					System.out.println("Sleep interrupted.");
 				}
 
 				// Process.this.lockSender.lock();
@@ -290,7 +283,7 @@ public class Process extends Thread {
 						try {
 							Thread.sleep(1);
 						} catch (InterruptedException e) {
-							e.printStackTrace();
+							System.out.println("Sleep interrupted.");
 						}
 					}
 
