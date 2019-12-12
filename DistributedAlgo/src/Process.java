@@ -287,13 +287,15 @@ public class Process extends Thread {
 
 				//Process.this.lockSender.lock();
 				for (Message m : Process.this.sendMessages) {
-					if (!m.getSent())
+					if (!m.getSent()){
 						new Sender(m).start();
-					try {
-						TimeUnit.MILLISECONDS.sleep(1);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
+                                                try {
+                                                        Thread.sleep(1);
+                                                } catch (InterruptedException e) {
+                                                        e.printStackTrace();
+                                                }
+                                        }
+					
 				}
 				//Process.this.lockSender.unlock();
 			}
@@ -341,7 +343,7 @@ public class Process extends Thread {
 
 							// Send acknowledgment for non-acknowledgment message
 							Message ack = new Message(msg.getM(), senderPort, senderIp, msg.getDestinationPort(),
-									msg.getDestinationInetAddr(), msg.getId(), true, false, msg.getSender(),
+									msg.getDestinationInetAddr(), msg.getId(), true, msg.isBroadcast(), msg.getSender(),
 									getProcessId(), msg.getVectorClock());
 							ack.setThreadId(msg.getThreadId());
 
@@ -352,7 +354,7 @@ public class Process extends Thread {
 
 							// Set threadID true so that Sender thread stops sending
 							//Process.this.lockSender.lock();
-							//Process.this.removeSendMsg(msg);
+							Process.this.removeSendMsg(msg);
 							//Process.this.lockSender.unlock();
 							
 							// Add message to acknowledges and broadcast
@@ -373,16 +375,32 @@ public class Process extends Thread {
 	}
 
 	public void removeSendMsg(Message msg) {
-		for (Message m : sendMessages) {
-			if (m.getId().equals(msg.getId())
+            for(Integer i = 0;i<sendMessages.size(); i++){
+                Message m = sendMessages.get(i);
+                if (m.getId().equals(msg.getId())
 				&& m.getM().equals(msg.getM())
 				&& m.getDestinationInetAddr().equals(msg.getSourceInetAddr())
 				&& m.getDestinationPort().equals(msg.getSourcePort())
+				&& m.getSourceInetAddr().equals(msg.getDestinationInetAddr())
+				&& m.getSourcePort().equals(msg.getDestinationPort())
 				&& m.getSender().equals(msg.getSender())
+				&& m.isBroadcast() == msg.isBroadcast()
 				) {
-				m.setSent(true);
+                                    sendMessages.get(i).setSent(true);
+                                    break;
 			}
-		}
+
+            }
+//		for (Message m : sendMessages) {
+//			if (m.getId().equals(msg.getId())
+//				&& m.getM().equals(msg.getM())
+//				&& m.getDestinationInetAddr().equals(msg.getSourceInetAddr())
+//				&& m.getDestinationPort().equals(msg.getSourcePort())
+//				&& m.getSender().equals(msg.getSender())
+//				) {
+//				m.setSent(true);
+//			}
+//		}
 	}
 
 	/**
