@@ -42,24 +42,24 @@ public class LocalizedCausalBroadcast {
 	}
 
 	public boolean canLCBdeliver(Message message) {
-		// this.p.VClock.lock();
-		boolean canLCBdeliver = true;
-		try {
-			ArrayList<Integer> messageVC = message.getVectorClock();
-			ArrayList<Integer> processVC = p.getVectorClock();
 
-			if (processVC.get(message.getSender() - 1) != message.getId() - 1) {
-				canLCBdeliver = false;
-			}
-			for (Integer i = 0; i < messageVC.size(); i++) {
-				if (messageVC.get(i) > processVC.get(i)) {
-					canLCBdeliver = false;
-					break;
-				}
-			}
-		} finally {
-			// this.p.VClock.unlock();
+		// Compare vector clocks of process and message to see if we can deliver
+
+		boolean canLCBdeliver = true;
+
+		ArrayList<Integer> messageVC = message.getVectorClock();
+		ArrayList<Integer> processVC = p.getVectorClock();
+
+		if (processVC.get(message.getSender() - 1) != message.getId() - 1) {
+			canLCBdeliver = false;
 		}
+		for (Integer i = 0; i < messageVC.size(); i++) {
+			if (messageVC.get(i) > processVC.get(i)) {
+				canLCBdeliver = false;
+				break;
+			}
+		}
+
 		return canLCBdeliver;
 	}
 
@@ -67,7 +67,7 @@ public class LocalizedCausalBroadcast {
 
 		@Override
 		public void run() {
-
+			// Thread that keeps trying to deliver pending messages.
 			while (true) {
 
 				try {
