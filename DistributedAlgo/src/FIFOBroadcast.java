@@ -61,7 +61,7 @@ public class FIFOBroadcast {
 			return receivedMesgs.get(id);
 		}
 
-		public synchronized void deliver() {
+		public void deliver() {
 			// FIFO deliver
 
 			// Start with the current highest delivered message
