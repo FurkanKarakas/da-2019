@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 
 public class LocalizedCausalBroadcast {
 	private Process p;
@@ -18,24 +17,48 @@ public class LocalizedCausalBroadcast {
 		lcbDeliver.start();
 	}
 
-	public void sendMessage(ArrayList<Message> messages) throws IOException {
-		this.fifoBC.sendMessage(messages);
+	public void sendMessage(Integer msgID) throws IOException {
+
+		try {
+			this.p.VClock.lock();
+			ArrayList<Integer> vectorClockCurrent = new ArrayList<Integer>(this.p.getVectorClock());
+			this.p.log("b " + msgID + "\n");
+			this.p.VClock.unlock();
+			vectorClockCurrent = this.p.mask(vectorClockCurrent);
+			ArrayList<Message> messages = this.p.createMessagesList(true, this.p.getProcessId(), vectorClockCurrent);
+			this.fifoBC.sendMessage(messages);
+		} finally {
+
+		}
 	}
 
 	public void deliver(Message message) {
-		this.pending.add(message);
+		this.p.Pendinglock.lock();
+		try {
+			this.pending.add(message);
+		} finally {
+			this.p.Pendinglock.unlock();
+		}
 	}
 
 	public boolean canLCBdeliver(Message message) {
-		ArrayList<Integer> messageVC = message.getVectorClock();
-		ArrayList<Integer> processVC = p.getVectorClock();
+		// this.p.VClock.lock();
 		boolean canLCBdeliver = true;
+		try {
+			ArrayList<Integer> messageVC = message.getVectorClock();
+			ArrayList<Integer> processVC = p.getVectorClock();
 
-		for (Integer i = 0; i < messageVC.size(); i++) {
-			if (messageVC.get(i) > processVC.get(i)) {
+			if (processVC.get(message.getSender() - 1) != message.getId() - 1) {
 				canLCBdeliver = false;
-				break;
 			}
+			for (Integer i = 0; i < messageVC.size(); i++) {
+				if (messageVC.get(i) > processVC.get(i)) {
+					canLCBdeliver = false;
+					break;
+				}
+			}
+		} finally {
+			// this.p.VClock.unlock();
 		}
 		return canLCBdeliver;
 	}
@@ -44,17 +67,23 @@ public class LocalizedCausalBroadcast {
 
 		@Override
 		public void run() {
-			System.out.println("Starting Localised Causal Broadcast thread.");
 
 			while (true) {
-				for (Message message : pending) {
-					if (canLCBdeliver(message)) {
-						fifoBC.canDeliver(message);
-						pending.remove(message);
+
+				try {
+					for (Message message : pending) {
+						if (canLCBdeliver(message)) {
+							fifoBC.canDeliver(message);
+							p.Pendinglock.lock();
+							pending.remove(message);
+							p.Pendinglock.unlock();
+						}
 					}
+				} finally {
+
 				}
 				try {
-					TimeUnit.MILLISECONDS.sleep(100);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					System.out.println("Failed to sleep in deliver thread.");
 				}

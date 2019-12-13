@@ -21,9 +21,9 @@ public class FIFOBroadcast {
 
 	public void sendMessage(ArrayList<Message> messages) throws IOException {
 		// Log the broadcast based on first message
-		Message m0 = messages.get(0);
-		if (m0 != null)
-			this.p.log("b " + m0.getId() + "\n");
+		// Message m0 = messages.get(0);
+		// if (m0 != null)
+		// this.p.log("b " + m0.getId() + "\n");
 
 		// URB broadcast all messages
 		this.urb.sendMessage(messages);
@@ -69,17 +69,23 @@ public class FIFOBroadcast {
 			Message msg = receivedMesgs.get(startIdx);
 
 			// Loop until all currently deliverable messages are logged and delivered
-			while (msg != null) {
-				this.alreadyDelivered.getAndIncrement();
-				startIdx++;
-				FIFOBroadcast.this.p.log("d " + msg.getSender() + " " + msg.getM() + "\n");
 
-				// Increase vector clock
-				Integer senderIndex = msg.getSender() - 1;
-				p.increaseVectorClock(senderIndex);
+			try {
+				while (msg != null) {
+					this.alreadyDelivered.getAndIncrement();
+					startIdx++;
+					FIFOBroadcast.this.p.VClock.lock();
+					FIFOBroadcast.this.p.log("d " + msg.getSender() + " " + msg.getM() + "\n");
 
-				msg = receivedMesgs.get(startIdx);
+					// Increase vector clock
+					Integer senderIndex = msg.getSender() - 1;
 
+					FIFOBroadcast.this.p.increaseVectorClock(senderIndex);
+					FIFOBroadcast.this.p.VClock.unlock();
+					msg = receivedMesgs.get(startIdx);
+
+				}
+			} finally {
 			}
 		}
 	}

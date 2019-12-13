@@ -21,6 +21,7 @@ public class Message implements Serializable {
 	private Integer sender;
 	private Integer ackSender;
 	private ArrayList<Integer> vectorClock;
+	private boolean sent;
 
 	/**
 	 * 
@@ -51,6 +52,7 @@ public class Message implements Serializable {
 		this.sender = sender;
 		this.ackSender = ackSender;
 		this.vectorClock = vectorClock;
+		this.sent = false;
 	}
 
 	public ArrayList<Integer> getVectorClock() {
@@ -139,6 +141,14 @@ public class Message implements Serializable {
 
 	public void setAckSender(Integer ackSender) {
 		this.ackSender = ackSender;
+	}
+
+	public boolean getSent() {
+		return this.sent;
+	}
+
+	public void setSent(boolean tf) {
+		this.sent = tf;
 	}
 
 	@Override

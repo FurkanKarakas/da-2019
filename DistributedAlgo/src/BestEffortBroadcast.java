@@ -13,6 +13,7 @@ public class BestEffortBroadcast {
 		for (Message m : messages) {
 			p.sendMessage(m);
 		}
+
 	}
 
 	public boolean deliverMessage(Message msg) {

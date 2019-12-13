@@ -42,7 +42,7 @@ public class Da_proc {
                     pi = new Process(piAddr, port, processID, broadcastCount, n);
                     // Set all of the affected processes to false
                     for (Integer j = 0; j < n; j++)
-                    	pi.setIsAffected(j, false);
+                        pi.addToIsAffected(false);
                 }
             }
 
@@ -56,7 +56,6 @@ public class Da_proc {
                     break;
                 }
             }
-
             // Finally set list of all processes to the current process
             pi.setProcesses(processes);
             sc.close();
