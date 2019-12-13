@@ -52,16 +52,11 @@ public class Process extends Thread {
 	private Listener pListener;
 
 	static Integer msgID = 0;
-	ReentrantLock VClock = new ReentrantLock();
-	ReentrantLock VClock2 = new ReentrantLock();
-	ReentrantLock VClock3 = new ReentrantLock();
-	ReentrantLock Pendinglock = new ReentrantLock();
-	ReentrantLock Pendinglock2 = new ReentrantLock();
-	ReentrantLock loglock = new ReentrantLock();
-	ReentrantLock loglock2 = new ReentrantLock();
-	ReentrantLock loglock3 = new ReentrantLock();
 
-	ReentrantLock lockSender = new ReentrantLock();
+
+	ReentrantLock VClock = new ReentrantLock();     // Lock for vector clock
+	ReentrantLock Pendinglock = new ReentrantLock(); // Lock for pending messages in LCB
+
 
 	/**
 	 * Process constructor
@@ -158,7 +153,6 @@ public class Process extends Thread {
 			p.getpListener().interrupt();
 			p.getsListener().interrupt();
 			p.interrupt();
-			// p.getLCB().
 			System.exit(0);
 		}
 	}
@@ -275,8 +269,8 @@ public class Process extends Thread {
 				} catch (InterruptedException e) {
 					System.out.println("Sleep interrupted.");
 				}
-
-				// Process.this.lockSender.lock();
+				
+				// Resend all messages that we haven't received ACK from
 				for (Message m : Process.this.sendMessages) {
 					if (!m.getSent()) {
 						new Sender(m).start();
@@ -288,7 +282,6 @@ public class Process extends Thread {
 					}
 
 				}
-				// Process.this.lockSender.unlock();
 			}
 		}
 	}
@@ -342,9 +335,7 @@ public class Process extends Thread {
 							// Receive acknowledgement
 
 							// Set threadID true so that Sender thread stops sending
-							// Process.this.lockSender.lock();
 							Process.this.removeSendMsg(msg);
-							// Process.this.lockSender.unlock();
 
 							// Add message to acknowledges and broadcast
 							ackMsgs.add(msg);
@@ -377,16 +368,6 @@ public class Process extends Thread {
 			}
 
 		}
-		// for (Message m : sendMessages) {
-		// if (m.getId().equals(msg.getId())
-		// && m.getM().equals(msg.getM())
-		// && m.getDestinationInetAddr().equals(msg.getSourceInetAddr())
-		// && m.getDestinationPort().equals(msg.getSourcePort())
-		// && m.getSender().equals(msg.getSender())
-		// ) {
-		// m.setSent(true);
-		// }
-		// }
 	}
 
 	/**
@@ -501,7 +482,6 @@ public class Process extends Thread {
 
 	public void setProcesses(ArrayList<InetSocketAddress> processes) {
 		this.processes = processes;
-		// this.fifoBC.setProcesses();
 	}
 
 	public void log(String l) {
